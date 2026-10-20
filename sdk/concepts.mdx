@@ -4,23 +4,29 @@ title: "Concepts"
 description: 'Learn about the core concepts of the SDK.'
 ---
 
-## Bridge & Chain configs
+## Bridge and chain configs
 
-Rhino has one bridge configuration that lists all the chains and tokens that are available for bridging. Additionally there is a configuration that lists all tokens that are available for bridge and swap. You can get those configs through the following SDK calls:
+Rhino.fi has two configurations:
+
+- The **bridge config** lists every chain and token available for bridging.
+- The **swap tokens config** lists the tokens available for bridge and swap, by chain.
+
+You can fetch them with these SDK calls:
+
 ```typescript
-// General bridge config
+// Bridge config
 const bridgeConfigResult = await sdk.api.config.bridge()
-// Tokens available for swapping by chain
+// Tokens available for swapping, by chain
 const swapTokensResult = await sdk.api.config.swapTokens()
 // Shortcut to fetch both configs in one call
 const allConfigsResult = await sdk.api.config.all()
-
 ```
 
 [Learn about the bridge API](/sdk/bridge-api).
 
-Assuming no error occurred, the result of the bridge config call will look like this:
-```typescript Bridge config [expandable]
+If no error occurs, the bridge config looks like this:
+
+```typescript
 {
   ETHEREUM: {
     name: "Ethereum",
@@ -34,7 +40,7 @@ Assuming no error occurred, the result of the bridge config call will look like 
     nativeTokenDecimals: 18,
     nativeTokenSafeguard: 0.008,
     blockExplorer: "https://etherscan.io",
-    rpc: "https://eth-mainnet.blastapi.io/7efcf8bf-0f7a-4364-8a59-c1917983dbdc",
+    rpc: "https://...",
     site: "https://ethereum.org",
     status: "enabled",
     tokens: {
@@ -59,32 +65,33 @@ Assuming no error occurred, the result of the bridge config call will look like 
   SOLANA: {
     // same format as above
   },
-  // Every supported chain will have an entry here
+  // Every supported chain has an entry here
 }
 ```
 
-The whole object corrosponds to the `BridgeConfig` type that is exported by the SDK.
-Each key will be a chain while the value will represent the chain config (`ChainConfig` type). Each value in the `tokens` field of a chain config represents a `TokenConfig`.
+The whole object corresponds to the `BridgeConfig` type exported by the SDK. Each key is a chain, and each value is that chain's config (the `ChainConfig` type). Each entry in a chain config's `tokens` field is a `TokenConfig`.
 
-A lot of functions in the SDK will have the `BridgeConfig` or a specific `ChainConfig`/`TokenConfig` as parameters. So for most advanced use cases you will most likely want to fetch the bridge config first.
+Many SDK functions take the `BridgeConfig`, or a specific `ChainConfig` or `TokenConfig`, as parameters. For most advanced use cases, fetch the bridge config first.
 
-## Chain Adapters
+## Chain adapters
 
-The SDK follows a modular approach where all blockchain interactions are encapsulated in chain adapters. When using one of the provided bridge functions, you always need to explicitly pass in a chain adapter that matches the origin chain.  
-Chain adapters handle the following:
+The SDK takes a modular approach: all blockchain interactions are handled by chain adapters. When you use one of the bridge functions, you always pass in a chain adapter that matches the origin chain.
+
+Chain adapters handle:
+
 - Fetching balances
 - Checking and setting token allowances
 - Making a deposit to a bridge contract
 - Estimating the gas fees for a bridge transaction (optional)
 
-### Resources
+Resources:
 
 - [More about chain adapters](/sdk/chain-adapters/overview)
 - [How to implement custom chain adapters](/sdk/chain-adapters/custom-chain-adapters)
 
 ## Supported chains and tokens
 
-Since the bridge functions will often take chains or tokens as `string` parameters, the SDK provides a list of supported chains and tokens to avoid the usage of magic strings. You can use them like this:
+Bridge functions often take chains or tokens as `string` parameters, so the SDK provides lists of supported chains and tokens to avoid magic strings:
 
 ```typescript
 import { SupportedChains, SupportedTokens } from '@rhino.fi/sdk'
@@ -94,20 +101,21 @@ const chainOut = SupportedChains.SOLANA
 const token = SupportedTokens.USDT
 ```
 
-<Warning>
-Those lists are generated at release time of the SDK and are not guaranteed to be always up to date. Therefore those lists might be out sync with the bridge config if Rhino adds a new supported chain/token or temporarily suspends one.  
-**Always use a freshly fetched bridge config if you want to display a list of available chains or tokens to a user for example. Do not rely on hardcoded lists for such purposes.**
-</Warning>
-<Note>
-`SupportedTokens` does not include swap tokens as those are too dynamic to be included in a static list like this.
-</Note>
+These lists are generated when the SDK is released, so they can fall out of sync with the bridge config if Rhino.fi adds a chain or token, or temporarily suspends one.
 
-[See SDA supported chains](/get-started/supported-chains#smart-deposit-address)
+<Warning>
+  To show users a list of available chains or tokens, always use a freshly fetched bridge config. Don't rely on these hard-coded lists for that.
+</Warning>
+
+`SupportedTokens` doesn't include swap tokens, as they change too often for a static list.
+
+See [Supported chains and tokens](/get-started/supported-chains) for the chains and tokens available for Smart Deposit Addresses.
 
 ## Error handling
 
-A lot of functions in the SDK will return an object with nullable `data` and `error` fields instead of throwing. Checking one for being defined will automatically narrow down the type of the other to non-nullable in the opposite code path. Errors are always a discriminated union type with a `_tag` or `type` field as discriminator. Some error types will also contain some additional fields with specific information about the error.  
-For example, an error that could occur when generating a user quote could be:
+Many SDK functions return an object with nullable `data` and `error` fields instead of throwing. Checking that one is defined narrows the other to non-nullable in the opposite code path. Errors are always a discriminated union with a `_tag` or `type` field as the discriminator. Some error types include extra fields with details about the error.
+
+For example, an error when generating a user quote could be:
 
 ```typescript
 {
@@ -118,3 +126,5 @@ For example, an error that could occur when generating a user quote could be:
   maxWithdrawAmount: '1000'
 }
 ```
+
+Amounts in errors are decimal strings in whole token units, as everywhere in the API. See [Errors](/api-integration/core-concepts#errors) for the common error names and what to do about them.

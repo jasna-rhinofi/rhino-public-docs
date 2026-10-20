@@ -1,0 +1,83 @@
+---
+title: "Overview"
+description: "Integrate the Rhino.fi Stablecoin Activation Stack over REST: accept stablecoin deposits on any supported chain and settle them where your business needs them."
+---
+
+The Rhino.fi API lets your platform accept tokens on any supported chain and settle them on the chain and in the token you choose. It works from any language that can make HTTPS requests. Every request and response body is JSON.
+
+<Tip>
+  Building in JavaScript or TypeScript? The [Rhino.fi SDK](/sdk/quickstart) wraps these endpoints and handles authentication for you. This section is for teams integrating over REST directly, or teams who want to understand what the SDK does.
+</Tip>
+
+## Choose your integration
+
+There are two ways to accept and settle funds with Rhino.fi, and clients often use both. Some rely on Smart Deposit Addresses, some on bridge transfers, and others combine the two. Both run on the same settlement infrastructure, are covered by your subscription and report progress through the same [status endpoints and webhooks](/api-integration/status-history).
+
+|  | Smart Deposit Addresses | Bridge transfers |
+| --- | --- | --- |
+| **How it works** | You give each end customer a deposit address. Rhino.fi detects every deposit and settles it to your destination. | Your platform requests a quote and commits it. The deposit is then sent from your platform or from your end customer's own wallet. |
+| **Who sends funds** | Your customer, from any wallet or exchange, or your platform after consolidating customer funds | Your platform, or your end customer from their own connected wallet |
+| **Onchain work on your side** | None | One deposit transaction per transfer, signed by your platform or your end customer |
+| **Swaps** | Settle every deposit in any token supported on the destination chain, with `tokenOut` | Cross-chain swaps, and same-chain swaps on EVM chains |
+| **Ideal use case** | Collect funds from many venues into one destination wallet, app or vault per user, with a simple transfer | Pay-ins and payouts from a connected wallet, with the source and destination set for each transaction |
+| **Guide** | [Smart Deposit Addresses](/api-integration/smart-deposits) | [Bridge transfers](/api-integration/bridge) |
+
+Using both is common: Smart Deposit Addresses for deposits coming in, and bridge transfers for withdrawals going out or to move funds between your own wallets.
+
+## Before you start
+
+You need:
+
+1. **A Rhino.fi project and API key.** Create both in the [Rhino.fi Console](https://console.rhino.fi). Read [Authentication](/api-integration/authentication) before choosing a key type.
+2. **A server-side environment** for secret keys and webhook handling.
+3. **Destination addresses** on each chain you will settle to. These can be your own addresses or your end customers' addresses.
+4. **For bridge transfers sent by you:** a signer on each source chain, such as a wallet, a custody provider or an MPC service. You don't need one if your end customers sign and send from their own wallets.
+
+## Test your integration
+
+We recommend testing on mainnet with small amounts, in a project you keep separate from production. Testnets have limited liquidity routes, so they don't show how transfers and swaps behave in production. Rhino.fi handles small transactions the same way as large ones, so a small mainnet test runs the real flow end to end.
+
+1. **Create a separate test project** in the [Rhino.fi Console](https://console.rhino.fi), with its own API keys and webhook URL. This keeps test traffic, history and webhooks apart from production.
+2. **Send small transactions** on every chain and token pair you plan to offer, within the [deposit limits](/api-integration/core-concepts#limits) for each route.
+3. **Test the edge cases**, such as a deposit below the minimum, an unsupported token or an expired quote. Check that your system handles the resulting statuses and webhooks.
+4. **Move to your production project** when everything works. Your account manager can help you plan the switch.
+
+## Base URLs
+
+All endpoints are served over HTTPS from `https://api.rhino.fi`. Each service has its own path prefix.
+
+| Service | Base URL | Reference |
+| --- | --- | --- |
+| Authentication | `https://api.rhino.fi/authentication` | [Authentication](/api-integration/authentication) |
+| Bridge (configs, quotes, status) | `https://api.rhino.fi/bridge` | [Bridge API reference](https://api.rhino.fi/bridge/swagger.json) |
+| Smart Deposit Addresses | `https://api.rhino.fi/sda` | [SDA API reference](https://api.rhino.fi/sda/swagger.json) |
+| Webhooks | `https://api.rhino.fi/webhook` | [Webhook API reference](https://api.rhino.fi/webhook/swagger.json) |
+| Transaction history | `https://api.rhino.fi/history-cursor` | [Track transactions](/api-integration/status-history) |
+
+## How this section is organized
+
+Read the guides in order. Each page ends with a link to the next one.
+
+<Steps>
+  <Step title="Authentication">
+    Choose the right key type, exchange it for a JWT and keep the token fresh. [Read the guide](/api-integration/authentication).
+  </Step>
+  <Step title="Core concepts">
+    Learn the identifiers, amounts, errors, pagination and limits that every endpoint shares. [Read the guide](/api-integration/core-concepts).
+  </Step>
+  <Step title="Integrate">
+    [Smart Deposit Addresses](/api-integration/smart-deposits), [Bridge transfers](/api-integration/bridge), or both.
+  </Step>
+  <Step title="Track transactions">
+    Receive webhooks, query status and reconcile history. [Read the guide](/api-integration/status-history).
+  </Step>
+  <Step title="Go live">
+    Work through the security and operations checks before production. [Read the checklist](/api-integration/go-live).
+  </Step>
+</Steps>
+
+## Next steps
+
+<Card title="Authentication" icon="key" href="/api-integration/authentication">
+  Set up your API key and get your first JWT.
+</Card>

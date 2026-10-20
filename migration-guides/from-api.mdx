@@ -1,61 +1,71 @@
 ---
 title: "From API to SDK"
-"og:title": "From API to SDK | Migration Guide SDK | Rhino.fi"
-description: This guide will help you migrate to the SDK if you have been using the API directly before. Depending on how sophisticated your use case is, you can choose between different levels of using the SDK.
+og:title: "From API to SDK | Migration Guide SDK | Rhino.fi"
+description: "This guide is for teams already integrated with the Rhino.fi REST API who want to move to the SDK. You can replace as much or as little of your integration as you like."
 ---
 
 ## Use the bridge functions
 
-For the vast majority of use cases you should be able to replace your manual API and blockchain calls with the [bridge](/sdk/bridge-functions/bridge) or [prepareBridge](/sdk/bridge-functions/prepare-bridge) function and the included [chain adapters](/sdk/chain/adapters/overview). Those will handle all the intricacies of the Rhino API and smart contracts correctly.
+For most use cases, you can replace your manual API and blockchain calls with the [`bridge`](/sdk/bridge-functions/bridge) or [`prepareBridge`](/sdk/bridge-functions/prepare-bridge) function and the included [chain adapters](/sdk/chain-adapters/overview). These handle all the details of the Rhino.fi API and smart contracts for you.
 
-However, if you have a use case that is not covered by those, read further to learn how to use the underlying primitives of the SDK directly.
+If your use case isn't covered by them, read on to learn how to use the SDK's underlying building blocks directly.
 
-<Note>
-If the included chain adapters do not cover your use case, you can [implement a custom chain adapter](/sdk/chain-adapters/custom-chain-adapters) and use that with the `bridge` or `prepareBridge` function.
-</Note>
+If the included chain adapters don't cover your use case, you can [implement a custom chain adapter](/sdk/chain-adapters/custom-chain-adapters) and use it with `bridge` or `prepareBridge`.
 
-## Using the SDK API wrapper
+## Use the SDK API wrappers
 
-If your use case requires you to be in control of all API calls, you can still replace your manual API calls with the wrappers from the SDK to reduce the amount of code significantly:
+If you need to stay in control of every API call, you can still replace your manual calls with the SDK's wrappers and write much less code:
 
 ```typescript
 // Manual API call
-const result = await fetch('https://api.rhino.fi/bridge/quote/bridge-swap/user', {
+const response = await fetch('https://api.rhino.fi/bridge/quote/bridge-swap/user', {
   method: 'POST',
   headers: {
-    "content-type": "application/json",
-    "authorization": jwt,
+    'content-type': 'application/json',
+    'authorization': jwt,
   },
   body: JSON.stringify(quoteArgs),
 })
+const quote = await response.json()
 
 // SDK replacement
-const result = rhinoSdk.api.bridge.getSwapUserQuote(quoteArgs)
+const result = await rhinoSdk.api.bridge.getSwapUserQuote(quoteArgs)
 ```
 
-Under `api.bridge` and `api.config` in the SDK you will find equivalent functions to all the manual API calls that you may have used before. The parameters are mostly the same, although some minor convenience tweaks have been made in certain wrappers.
+Under `api.bridge` and `api.config`, the SDK has an equivalent for every API call you may have used. The parameters are mostly the same, with small convenience changes in some wrappers. The SDK also handles authentication, so you don't need to manage JWTs yourself.
 
-## Using the SDK chain adapters
+## Use the SDK chain adapters
 
-If you would like to be directly in control of the blockchain interactions, you can use the included chain adapters directly:
+If you want direct control of the blockchain interactions, you can use the included chain adapters on their own:
 
 ```typescript
-// Set up the chain adapter, can be any of the included ones
+// Set up the chain adapter. This can be any of the included ones.
 const evmChainAdapter = getEvmChainAdapterFromPrivateKey(
-  'YOUR_PRIVATE_KEY',
-  chainConfig
+  process.env.EVM_PRIVATE_KEY,
+  chainConfig,
 )
-// Check if a token approval is needed. Could be skipped if you know that the blockchain does not have a concept of token approvals, like Solana.
+
+// Check whether a token approval is needed. You can skip this on chains
+// without token approvals, such as Solana.
 const approvalAmount = await evmChainAdapter.getApprovalAmount(depositAmount, walletAddress, tokenConfig)
-if(approvalAmount) {
+if (approvalAmount) {
   // Set up the token approval if needed
   await evmChainAdapter.handleTokenApproval(approvalAmount, tokenConfig)
 }
-// Send the funds to be bridged to the bridge contract. Once successful, the status
-// of the bridge can be tracked through the Rhino API as usual.
+
+// Send the funds to the bridge contract. commitmentId is the quote ID of the
+// committed quote.
 const { depositTxHash } = await evmChainAdapter.handleDeposit({
   tokenConfig,
   depositAmount,
   commitmentId,
 })
 ```
+
+Once the deposit succeeds, track the transfer through the API as usual. See [Track transactions](/api-integration/status-history).
+
+## Related
+
+- [API Integration overview](/api-integration/introduction)
+- [Core concepts](/api-integration/core-concepts): the quote ID, amounts and errors shared by the API and the SDK
+- [SDK quickstart](/sdk/quickstart)

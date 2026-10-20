@@ -1,29 +1,30 @@
 ---
 title: "Subscribe to webhooks"
-description: "You can either setup your webhook URL once for your project in the Rhino Console or pass it on invidual bridges."
+description: "You can receive webhooks in two ways: one URL for your whole project, set in the Rhino.fi Console, or a different URL for an individual transfer or Smart Deposit Address, set in the API request."
 ---
 
 ## Using the Rhino.fi Console
 
-Within the <u>Rhino.fi</u> Console, navigate to the ‘Integrate’ section within the navigation bar. Under the ‘Webhooks’ section you are able to set up a new webhook and view an existing webhook.
+In the Rhino.fi Console, open **Integrate** in the navigation bar. Under **Webhooks**, you can add a new webhook or view an existing one.
 
-To add a new webhook, enter the webhook URL.
+To add a webhook, enter your webhook URL.
 
 <Warning>
-  Please make sure NOT to include the suffix `/rhinofi-event`.
-
-  e.g you should provide: [https://my-server.com/prefix](https://my-server.com/prefix), and Rhino.fi will then call: [https://my-server.com/prefix/rhinofi-event](https://my-server.com/prefix/rhinofi-event)
+  Don't include the `/rhinofi-event` suffix. Rhino.fi adds it for you. For example, if you enter `https://my-server.com/prefix`, Rhino.fi calls `https://my-server.com/prefix/rhinofi-event`.
 </Warning>
 
-The list of webhook event types are available here: [<u>https://docs.rhino.fi/webhook/events-list</u>](https://docs.rhino.fi/webhook/events-list)
+All webhook events for the project are sent to this URL. See the [events list](/webhook/events-list) for every event type.
 
-## Including within API calls
+## Setting a URL in an API request
 
-The <u>Rhino.fi</u> Console routes enables you to receive all webhook evenst through to a single webhook URL. However it’s also possible to specify a different URL per bridge, bridge\+swap or Smart Deposit Address.
+To send events for a specific transfer or Smart Deposit Address to a different URL, pass it in the `webhookUrl` field of the request. It overrides your project webhook for that transfer or address only.
 
-This can be achieved by passing a URL within the `webhookUrl` param in the:
+- [`POST /bridge/quote/bridge-swap/user`](/api-reference/bridge/quote/generate-a-bridgebridge+swap-quote): for bridge and bridge+swap activity
+- [`POST /sda/deposit-addresses`](/api-reference/sda/depositaddresses/generate-a-new-smart-deposit-address): for a Smart Deposit Address and all its deposits
 
-- `POST/quote/bridge-swap/user` endpoint: for bridge and bridge\+swap related activity
-- `POST/deposit-addresses` endpoint: for Smart Deposit Address set up and related activity
+## Next steps
 
-For the exact specification, [see the API Reference](https://docs.rhino.fi/api-reference/sda/depositaddresses/generate-a-new-smart-deposit-address)
+- [Set up your endpoint](/webhook/endpoint-setup): requirements for the server that receives events
+- [Verify webhook signatures](/webhook/verify-webhook-signature): check that every request comes from Rhino.fi
+- [Recover missed events](/webhook/get-missed-events): fetch events you missed during downtime
+- [Track transactions](/api-integration/status-history): how webhooks fit with the status and history endpoints

@@ -1,12 +1,11 @@
 ---
-title: EVM (Ethereum / L2s)
-description: "This guide explains how to interact with the [**Bridge Contract**](https://github.com/rhinofi/contracts_public/blob/master/bridge-deposit/DVFDepositContract.sol) on EVM-compatible blockchains."
+title: "EVM (Ethereum / L2s)"
+description: "This page shows how to call the Rhino.fi bridge contract directly on EVM chains. You need a committed quote first: see Bridge transfers for the full flow, and the full example for the same deposit as part of an end-to-end transfer."
 ---
-import CommitIdExplainer from '/snippets/commitid-explainer.mdx'
 
-## **Contract Overview**
+## Contract overview
 
-The `BridgeContract` exposes the following key function for bridging:
+The bridge contract exposes two functions for deposits:
 
 ```solidity
 /**
@@ -26,179 +25,127 @@ function depositNativeWithId(
 ) external payable;
 ```
 
+The `commitmentId` is the [quote ID](/api-integration/core-concepts#the-quote-id) from your committed quote. The API returns it as a hex string, so convert it to a `uint256` before calling the contract: `BigInt("0x" + quoteId)`.
+
+<Warning>
+  Don't use these functions for same-chain swaps. Those use a different contract and prepared calldata. See [Same-chain swaps](/api-integration/bridge#same-chain-swaps).
+</Warning>
+
 ## ABIs
-<AccordionGroup>
-  <Accordion title="Bridge Contract ABI">
-    ```json bridgeAbi.json
-    [
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "token",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "commitmentId",
-            "type": "uint256"
-          }
-        ],
-        "name": "depositWithId",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "commitmentId",
-            "type": "uint256"
-          }
-        ],
-        "name": "depositNativeWithId",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-      }
-    ]
-    ```
-  </Accordion>
-  <Accordion title="ERC20 ABI">
-    ```json erc20Abi.json
-    [
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "spender",
-            "type": "address"
-          }
-        ],
-        "name": "allowance",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "spender",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          }
-        ],
-        "name": "approve",
-        "outputs": [
-          {
-            "internalType": "bool",
-            "name": "",
-            "type": "bool"
-          }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      }
-    ]
-    ```
-  </Accordion>
-</AccordionGroup>
 
-### Setup
-For this example we'll use `ethers.js` to interact with the contract, but you can replace it with any EVM library of your choice.
+### Bridge contract ABI
 
-Make sure to install it first:
+```json
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "uint256", "name": "commitmentId", "type": "uint256" }
+    ],
+    "name": "depositWithId",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "commitmentId", "type": "uint256" }
+    ],
+    "name": "depositNativeWithId",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]
+```
+
+### ERC-20 ABI
+
+```json
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "spender", "type": "address" }
+    ],
+    "name": "allowance",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "spender", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "approve",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
+```
+
+## Setup
+
+This example uses [ethers v6](https://docs.ethers.org/v6/), but you can use any EVM library.
 
 <CodeGroup>
-  ```bash yarn
-  yarn add ethers
-  ```
 
-  ```bash npm
-  npm install ethers
-  ```
+```bash npm
+npm install ethers
+```
+
+```bash yarn
+yarn add ethers
+```
 </CodeGroup>
 
+## Call the contract
 
-## Interacting with the Contract
-To execute a bridge transaction, call the `depositWithId` (ERC20) or `depositNativeWithId` (native) function as follows:
+To send a deposit, call `depositWithId` for ERC-20 tokens or `depositNativeWithId` for the chain's native token:
 
-<CommitIdExplainer />
+```javascript
+import { Contract, JsonRpcProvider, Wallet, parseUnits } from 'ethers'
+import { rhinoFetch } from './rhino.js' // helper from the Authentication guide
+import erc20Abi from './erc20Abi.json'
+import bridgeAbi from './bridgeAbi.json'
 
-<CodeGroup>
-
-```javascript ethers
-import ethers from 'ethers'
-import getBridgeConfigs from './getBridgeConfigs'
-import erc20Abi from './erc20Abi'
-import bridgeAbi from './bridgeAbi'
-
-export const callEvmBridgeContract = async ({
-  address,
-  amount,
-  chain,
-  token,
-  commitmentId,
-}) => {
-  // See API Integration -> Fetch Bridge Configs for the full implementation
-  const configs = await getBridgeConfigs()
+export async function callEvmBridgeContract({ amount, chain, token, quoteId }) {
+  const configs = await rhinoFetch('/bridge/configs', { auth: false })
   const chainConfig = configs[chain]
 
-  // Replace with your wallet implementation
-  const wallet = new ethers.Wallet(EVM_PRIVATE_KEY, new ethers.JsonRpcProvider(chainConfig.rpc))
+  // Replace with your own signer, such as a custody provider or MPC wallet
+  const wallet = new Wallet(process.env.EVM_PRIVATE_KEY, new JsonRpcProvider(chainConfig.rpc))
 
-  const tokenConfig = chainConfig.tokens[token]
-  const tokenAmount = +amount * 10 ** tokenConfig.decimals
-  const tokenAddress = tokenConfig.address
+  const bridgeContract = new Contract(chainConfig.contractAddress, bridgeAbi, wallet)
+  const commitmentId = BigInt(`0x${quoteId}`)
 
-  const bridgeContractAddress = chainConfig.contractAddress
-
-  const isNativeToken = chainConfig.nativeTokenName === token
-
-  const bridgeContract = new ethers.Contract(bridgeContractAddress, bridgeAbi, wallet)
-
-  // For ERC20 tokens we call 'depositWithId' and for native tokens we call 'depositNativeWithId'
-  if (!isNativeToken) {
-    // make sure to check token allowance first for erc20 tokens
-    const erc20Contract = new ethers.Contract(tokenAddress, erc20Abi, wallet)
-    const contractAllowance = await erc20Contract.allowance(address, bridgeContractAddress)
-    const allowance = parseFloat(contractAllowance.toString()) / 10 ** tokenConfig.decimals
-
-    if (allowance === 0 || allowance < parseFloat(amount)) {
-     const tx = await erc20Contract.approve(bridgeContractAddress, tokenAmount)
-     await tx.wait()
-    }
-    // Call the contract
-    const tx = await bridgeContract.depositWithId(tokenAddress, tokenAmount, BigInt(`0x${commitmentId}`))
+  // Native token: send the amount as the transaction value
+  if (token === chainConfig.nativeTokenName) {
+    const value = parseUnits(amount, chainConfig.nativeTokenDecimals)
+    const tx = await bridgeContract.depositNativeWithId(commitmentId, { value })
     return tx.wait()
   }
 
-  const tx = await bridgeContract.depositNativeWithId(BigInt(`0x${commitmentId}`), {
-    value: parseUnits(amount, 'ether'),
-  })
+  // ERC-20 token: convert to base units exactly, never with floating-point math
+  const tokenConfig = chainConfig.tokens[token]
+  const tokenAmount = parseUnits(amount, tokenConfig.decimals)
+
+  // Approve the bridge contract if the current allowance is too low
+  const erc20Contract = new Contract(tokenConfig.address, erc20Abi, wallet)
+  const allowance = await erc20Contract.allowance(await wallet.getAddress(), chainConfig.contractAddress)
+  if (allowance < tokenAmount) {
+    const approveTx = await erc20Contract.approve(chainConfig.contractAddress, tokenAmount)
+    await approveTx.wait()
+  }
+
+  const tx = await bridgeContract.depositWithId(tokenConfig.address, tokenAmount, commitmentId)
   return tx.wait()
 }
 ```
-</CodeGroup>
+
+`amount` is the quote's `payAmount`: a decimal string in whole token units, such as `"250"`. See [Amounts](/api-integration/core-concepts#amounts).
+
+Once the deposit is confirmed, track the transfer with webhooks or the status endpoint. See [Track transactions](/api-integration/status-history).

@@ -1,53 +1,49 @@
 ---
 title: "Advanced Fee & Limit Management"
-description: "View fee and limit configurations across the Stablecoin Activation Stack with the ability to change fee structures to customer and route levels, as well as levying a client surcharge."
+description: "Set client surcharges per customer or route, and see your SDA and 1:1 limits in the Rhino.fi Console."
 ---
-
-## Advanced Fee & Limit Management
 
 **Extension tier:** Free + Premium
 
-The Advanced Fee & Limit Management extension gives you control over how fees are presented and collected in your integration. It is designed for clients that want to either remove fee friction from their end users entirely, or use the bridge integration as a revenue source.
+The Advanced Fee & Limit Management extension gives you control over how fees are presented and collected in your integration. It's designed for clients who want to remove fee friction for their end users entirely, or to use their Rhino.fi integration as a revenue source.
 
-It is accessible within the Rhino.fi Console to provide quick and easy access to view limit information and set fee policies.
+You use it in the Rhino.fi Console, where you can view your limits and set fee policies.
 
----
+## Client surcharge
 
-### Client Surcharge
-
-Subscription clients may choose to add on an additional charge that is passed directly through to their customers for their Rhino.fi activity. This is called a 'client surcharge' and is able to be a fixed \$ amount and/or a fixed % amount. This amount is rebated to clients as part of the end of month invoicing.
+Subscription clients can add an extra charge that is passed directly through to their customers for their Rhino.fi activity. This is called a client surcharge. It can be a fixed dollar amount, a fixed percentage, or both. The total collected is deducted from your end-of-month invoice. See [Fees](/get-started/fees-and-limits#client-surcharge).
 
 For example:
 
-- ClientA may add a client surcharge of 1%
-- ClientB may add a client surcharge of \$0.50
-- ClientC may add a client surcharge of 0.25% + \$0.30
+- Client A adds a client surcharge of 1%.
+- Client B adds a client surcharge of \$0.50.
+- Client C adds a client surcharge of 0.25% + \$0.30.
 
-For clients without the Advanced Fee and Limit Management extension, this surcharge is applied across all customers and all routes.
+Without this extension, the surcharge applies to all your customers and all routes.
 
-However with the Advanced Fee and Limit Management extension, clients are able to apply a 'Default Policy' to one or more projects which applied to all customers and all routes, but then also set 'Fee Policies' which override the default policy when specified conditions are met.
+### Fee policies
 
-These fee policies can be set at the customer lever or route level.
+With this extension, you can set a **default policy** for one or more projects, which applies to all customers and all routes. You can then add **fee policies** that override the default when their conditions are met. Fee policies can be set at the customer level or the route level.
 
-- **Customer Fee Policies:** Clients are able to specify one or more customers (via a customerID or Rhino.fi Smart Deposit Addresses) that the client surcharge should be applied to. This enables fee structures where subsets of customers are charged different rates e.g 0.1% for VIP customers vs 0.4% for all other customers.
-- **Route Fee Policies:** Clients are able to specify one or more chains that fees should be applied to. It is also possible to specify whether this is as the source and/or destination chain. This enables fee structures where certain chains are charged at different rates e.g for Solana to Base there is a \$1 fee, and for transaction involving Ethereum (whether the source or destination chain) the fee should be \$2. It is also possible to specify one or more tokens - as either/or the source or destination token, and set different rates for them. Route Fee Policies can also be a combination of chains and tokens.<br /><br />This comprehensive configurability allows for clients to set bespoke fee policies which meet their individual needs.
+- **Customer fee policies.** Apply a surcharge to one or more specific customers, identified by a customer ID or by their Rhino.fi Smart Deposit Addresses. This lets you charge different rates to different groups, for example 0.1% for VIP customers and 0.4% for everyone else.
+- **Route fee policies.** Apply a surcharge to one or more chains, as the source chain, the destination chain or both. For example, a \$1 fee from Solana to Base, and a \$2 fee for any transaction involving Ethereum, as source or destination. You can also set rates for specific tokens, as the source or destination token, or combine chains and tokens in one policy.
 
-We will continue to build to build out additional fee policy structures and configurations so please reach out if you have additional requirements not facilitated by the above.
+Together, these let you set fee policies that match your business.
 
-### Limit Information
+We're adding more fee policy options. If you need a structure that isn't covered above, contact your account manager.
 
-Within Advanced Fee and Limit Management there is information about Smart Deposit Address limits as well as, where the extension is enabled, 1:1 Stablecoin Swap Limits. This ensures that clients have access to this information directly.
+## Limit information
 
-Smart Deposit Address (SDA) Limits shows the number of generated Smart Deposit Addresses, in total and over various time periods, and how the tracks towards the client's total SDA limit. Information on the minimum and maximum deposit per SDA, per project is also visible.
+The extension also shows your Smart Deposit Address limits and, where the extension is enabled, your 1:1 Stablecoin Settlement limits, directly in the Console.
 
-1:1 Limits shows a comprehensive view of which projects have 1:1 enabled on, what the 30 day volume vs the limit is including the daily volume, rolling 30d total and projected volume to help clients best manage their activity. The max USD per recipient limit is also included.
+- **SDA limits** show how many Smart Deposit Addresses you've created, in total and over different time periods, and how that compares with your total SDA limit. You can also see the minimum and maximum deposit per SDA, for each project.
+- **1:1 Stablecoin Settlement limits** show which projects have 1:1 enabled, your 30-day volume against the limit (including daily volume, the rolling 30-day total and projected volume) and the maximum USD per recipient.
 
-For more information on Rhino.fi limits generally [https://docs.rhino.fi/get-started/](https://docs.rhino.fi/get-started/introduction)limits
-
----
+For more on how limits work, see [Limits](/get-started/limits).
 
 ## Related
 
-- [Fees & Limits](/get-started/fees-and-limits) — general fee documentation
-- [Smart Deposit Addresses — fee handling](/api-integration/smart-deposits)
+- [Fees](/get-started/fees-and-limits): how fees work
+- [Limits](/get-started/limits): the limits that apply to your account
+- [Smart Deposit Addresses: fees](/api-integration/smart-deposits#fees)
 - [Extensions overview](/get-started/extensions)

@@ -1,0 +1,56 @@
+---
+title: "Go-live checklist"
+description: "Security, reliability and operations checks to complete before you move a Rhino.fi integration to production."
+---
+
+Complete these checks before production traffic reaches your integration. Most teams review them with their Rhino.fi account manager in a launch call. Items marked **Required** are needed for the integration to work correctly; items marked **Recommended** are best practice.
+
+<Warning>
+  Trial accounts should not be used for production. To go live, contact our sales team at [partnerships@rhino.fi](mailto:partnerships@rhino.fi) to set up a production account.
+</Warning>
+
+## Account
+
+- [ ] _(Recommended)_ Your project is on a production account, set up with our sales team. Trial accounts should not be used for production traffic. A subscription gives you production-level limits and enterprise pricing, instead of the trial's test limits and per-transaction fees.
+
+## Security
+
+- [ ] _(Required)_ Secret keys are used only server-side and stored in a secrets manager. See [Authentication](/api-integration/authentication#choose-a-key-type).
+- [ ] _(Recommended)_ Production secret keys have an IP allowlist.
+- [ ] _(Required from 9 November 2026)_ SDA search and webhook event history are called from your backend with a secret key. Public keys are rejected from 9 November 2026.
+- [ ] _(Recommended)_ Your webhook endpoint [verifies every signature](/webhook/verify-webhook-signature) and rejects unsigned requests.
+- [ ] _(Recommended)_ You have a process to rotate API keys in the Rhino.fi Console, with an owner assigned.
+
+## Reliability
+
+- [ ] _(Required)_ JWTs are refreshed before they expire. Requests that return `401` are retried once with a fresh token.
+- [ ] _(Recommended)_ Every `4xx` and `5xx` response is logged with its error code. See [Errors](/api-integration/core-concepts#errors).
+- [ ] _(Recommended)_ `503` responses and network failures are retried with exponential backoff.
+- [ ] _(Recommended)_ The quote ID (`quoteId`, also used as `commitmentId` and `bridgeId`) is stored before any onchain deposit is sent.
+- [ ] _(Recommended)_ Your system recovers [missed webhook events](/webhook/get-missed-events) after an outage.
+- [ ] _(Recommended)_ Customer balances are credited on `EXECUTED`. Crediting earlier is a risk decision for your team.
+
+## Smart Deposit Addresses
+
+- [ ] _(Recommended)_ Your project is on a subscription, which sets production SDA limits to cover your expected volume. See [Limits](/api-integration/core-concepts#limits).
+- [ ] _(Recommended)_ Each SDA lists every EVM chain that supports SDAs, so deposits on the wrong network are still settled.
+- [ ] _(Recommended)_ Your customer UI shows the supported tokens and the minimum and maximum deposit amounts.
+- [ ] _(Recommended)_ You have agreed a refund process with your account manager, or have decided to use `refundAddress`.
+- [ ] _(Recommended)_ `DEPOSIT_ADDRESS_BRIDGE_REJECTED` and `DEPOSIT_ADDRESS_BRIDGE_DELAYED` events alert your support team.
+
+## Bridge transfers
+
+- [ ] _(Required)_ Same-chain swaps follow the calldata flow, not the bridge deposit. See [Same-chain swaps](/api-integration/bridge#same-chain-swaps).
+- [ ] _(Required)_ Token amounts are converted with `parseUnits`, or your language's equivalent, never with floating-point math.
+- [ ] _(Required)_ Quotes are committed before `expiresAt`, and before the deposit is sent.
+
+## Operations
+
+- [ ] _(Recommended)_ Your team has subscribed to the [Rhino.fi status page](/general/status-page).
+- [ ] _(Recommended)_ You have run at least one small transaction end to end on mainnet for every chain and token pair you will offer.
+- [ ] _(Recommended)_ Your support team knows how to find a transaction by quote ID (`quoteId`), deposit hash or withdrawal hash.
+- [ ] _(Recommended)_ Support contacts are agreed with your Rhino.fi account manager.
+
+## Need help?
+
+Contact your Rhino.fi account manager, or email [partnerships@rhino.fi](mailto:partnerships@rhino.fi) for commercial questions.

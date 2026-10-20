@@ -4,11 +4,9 @@ og:title: "Quickstart SDK Documentation | Docs | Rhino.fi"
 description: "Learn how to use the bridge SDK to make bridges with only a few lines of code."
 ---
 
-import RequestApiKey from '/snippets/request-api-key.mdx'
+The Rhino.fi SDK is a JavaScript/TypeScript client for the Rhino.fi Stablecoin Activation Stack. It handles authentication, config fetching, quote generation and transaction execution, so you can bridge assets with a few lines of code. For other languages, use the [REST API](/api-integration/introduction) directly.
 
-The Rhino SDK is a JavaScript/TypeScript client for the Rhino Stablecoin Activation Stack. It handles authentication, config fetching, quote generation, and transaction execution — letting you bridge assets with a few lines of code. For non-JS environments, use the [REST API](/api-integration/introduction) directly.
-
-### Install the package
+## Install the package
 
 <CodeGroup>
 
@@ -30,21 +28,23 @@ bun install @rhino.fi/sdk
 
 </CodeGroup>
 
-### Initialize the SDK
+## Initialize the SDK
 
-```typeScript rhino-sdk.ts
+```typescript
 import { RhinoSdk } from '@rhino.fi/sdk'
 
 export const rhinoSdk = RhinoSdk({
-  apiKey: 'YOUR_API_KEY',
+  apiKey: process.env.RHINO_API_KEY,
 })
 ```
 
-<RequestApiKey />
+<Warning>
+  Use a **public** key if the SDK runs in a browser or mobile app. Use a **secret** key only in server-side code, where it can't be exposed. See [Authentication](/api-integration/authentication#choose-a-key-type) for what each key type can access.
+</Warning>
 
-### Make a bridge
+## Make a bridge transfer
 
-```typescript bridge.ts
+```typescript
 import { SupportedChains, SupportedTokens } from '@rhino.fi/sdk'
 import { getEvmChainAdapterFromPrivateKey } from '@rhino.fi/sdk/adapters/evm'
 import { rhinoSdk } from './rhino-sdk'
@@ -59,18 +59,15 @@ const bridgeResult = await rhinoSdk.bridge({
   recipient: 'RECIPIENT_ADDRESS',
   mode: 'receive',
   gasBoost: {
-    amountNative: '4'
-  }
+    amountNative: '4',
+  },
 }, {
   getChainAdapter: chainConfig =>
-    getEvmChainAdapterFromPrivateKey(
-      'YOUR_PRIVATE_KEY',
-      chainConfig,
-    ),
-    hooks: {
-      checkQuote: quote => quote.fees.feeUsd < 5,
-      onBridgeStatusChange: status => console.log('Bridge status changed', status),
-    },
+    getEvmChainAdapterFromPrivateKey(process.env.EVM_PRIVATE_KEY, chainConfig),
+  hooks: {
+    checkQuote: quote => quote.fees.feeUsd < 5,
+    onBridgeStatusChange: status => console.log('Bridge status changed', status),
+  },
 })
 
 if (bridgeResult.data) {
@@ -80,13 +77,15 @@ if (bridgeResult.data) {
 }
 ```
 
-This would bridge **100 USDT** from **Arbitrum to Solana** while also receiving **4 SOL** tokens at the recipient address. Through the `checkQuote` hook a bridge that would cost over \$5 in fees would be aborted.
+This bridges 100 USDT from Arbitrum to Solana, and also delivers 4 SOL to the recipient address with [Gas Boost](/api-integration/bridge#gas-boost). With `mode: 'receive'`, the recipient gets exactly 100 USDT and fees are added on top (see [Choose a mode](/api-integration/bridge#choose-a-mode)). The `checkQuote` hook cancels the transfer if fees would be more than \$5.
 
-### Create a Smart Deposit Address
+In production, use your own signer, such as a custody provider or MPC wallet, instead of a raw private key.
 
-Smart Deposit Addresses let users bridge by making a simple token transfer — no contract interaction needed.
+## Create a Smart Deposit Address
 
-```typescript sda.ts
+Smart Deposit Addresses let users send funds with a simple token transfer, with no contract interaction.
+
+```typescript
 import { rhinoSdk } from './rhino-sdk'
 
 const sda = await rhinoSdk.api.depositAddresses.create({
@@ -105,40 +104,38 @@ const sda = await rhinoSdk.api.depositAddresses.create({
 // }
 ```
 
-Once created, anyone can send supported tokens to the deposit address and funds will be automatically bridged to the destination.
+Once it's created, anyone can send supported tokens to the deposit address, and the funds are settled to the destination automatically.
 
-```typescript sda-status.ts
+```typescript
 import { rhinoSdk } from './rhino-sdk'
 
-// Check status of an existing SDA
+// Check the status of an existing SDA
 const status = await rhinoSdk.api.depositAddresses.getStatus({
   depositAddress: '0x457...',
   depositChain: 'ETHEREUM',
 })
 ```
 
-<Tip>
-  We recommend generating SDAs on all available EVM chains at once to ensure funds sent to the wrong chain are still detected automatically.
-</Tip>
+We recommend creating SDAs on every available EVM chain at once, so funds sent on the wrong chain are still detected automatically.
 
-For more details, see the full [SDK SDA reference](/sdk/smart-deposits) or the [API integration guide](/api-integration/smart-deposits).
+For more details, see the [SDK SDA reference](/sdk/smart-deposits) or the [Smart Deposit Addresses guide](/api-integration/smart-deposits).
 
 ## Resources
 
 <CardGroup cols={2}>
   <Card title="SDK concepts" icon="book" href="/sdk/concepts">
-    Learn about the core concepts of the SDK
+    Learn the core concepts of the SDK.
   </Card>
 
-  <Card title="Rhino architecture" icon="book" href="/get-started/architecture">
-    Learn about the overall architecture of the Rhino bridge
+  <Card title="Core concepts" icon="compass" href="/api-integration/core-concepts">
+    How quotes, deposits and settlement work across Rhino.fi.
   </Card>
 
-  <Card title="Bridge functions" icon="code" href="/sdk/bridge-functions/bridge">
-    Learn more on how to use the bridge functions
+  <Card title="Bridge functions" icon="arrow-right-arrow-left" href="/sdk/bridge-functions/bridge">
+    Learn more about the bridge functions.
   </Card>
 
   <Card title="Chain adapters" icon="plug" href="/sdk/chain-adapters/overview">
-    Learn how to use chain adapters to connect to all supported chains
+    Connect to every supported chain with chain adapters.
   </Card>
 </CardGroup>

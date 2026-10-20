@@ -5,37 +5,53 @@ description: "Learn how Rhino.fi charges fees and how the Advanced Fee & Limit M
 
 ## How Rhino.fi limits work
 
-Rhino.fi supports enteprise-grade volumes and value and can work with you to ensure that the limits on your account meet your expected transaction activity. With the [**Advanced Fee & Limit Management**](https://docs.rhino.fi/get-started/extensions/advanced-fee-management) extension, these limits are viewable, and we are always happy to discuss extending limits to ensure uninterrupted service to meet your transaction volume and value needs.
+Rhino.fi supports enterprise-grade volumes and values, and can work with you to make sure the limits on your account match your expected transaction activity. With the [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management) extension, you can view these limits. We're always happy to discuss raising them so your service is never interrupted.
 
-There are a number of different limits which can be applicable to Rhino.fi activity:
+## Trial and subscription limits
 
-### Smart Deposit Address Limits
+Your limits depend on your account type. Trial accounts have fixed limits for testing, which don't reflect production. Subscription accounts have production limits that depend on your plan. See [Trial accounts: what's included and how it differs from a subscription](https://learn.rhino.fi/articles/8966431786-trial-accounts-what-s-included-and-how-it-differs-from-a-subscription) for the current limits of each.
 
-- **Generated SDAs:** Clients will have maximum number of Smart Deposit Addresses (SDAs) which can be created as per their PAYG or Subscription tier. The number of generated SDAs vs the maximum allowance is available within the response of the `GET/deposit-addresses/rate-limit-status` endpoint and will be available in the Usage page in the Console.
-- **Generation Windows:** There may also be addition limits which specify the number of SDAs that can be generated over a specific time period e.g over a hour or day. Where this is applicable, these details can be found within the response of the `GET/deposit-addresses/rate-limit-status` endpoint.
-- **Min and Max Deposit Size:** This is the minimum \$ amount and maximum \$ amount which can be received into an SDA and is set at a project level. This information can be found within the SDA limits section of Advanced Fee and Limit Management in the Console or by speaking with your Rhino.fi account manager.
+Several kinds of limits can apply to your Rhino.fi activity.
 
-### Bridge+Swap Limits
+## Smart Deposit Address limits
 
-To avoid situations where a transaction value may fall below the onchain costs, Rhino.fi has a minimum deposit amount per token, per chain. For the majority of our enterprise clients and their end customers, this will be significantly below the value they wish to transact. If you have transaction volume which may fall close to or below this please reach out as we may be able to support per-client custom minimum limits.
+- **Generated SDAs.** Your subscription plan, or your trial account, sets the maximum number of Smart Deposit Addresses (SDAs) you can create. Your current usage against this maximum is returned by the [rate limit usage endpoint](/api-reference/sda/depositaddresses/obtain-the-current-rate-limit-usage-for-smart-deposit-address-creation) (`GET /sda/deposit-addresses/rate-limit-status`), and is shown in the Rhino.fi Console under **Settings → Usage**.
+- **Generation windows.** There may also be limits on how many SDAs you can create in a given period, such as an hour or a day. Where these apply, they are also returned by the rate limit usage endpoint.
+- **Minimum and maximum deposit.** The minimum and maximum USD amount an SDA can receive, set per project. You can find them in the SDA limits section of Advanced Fee & Limit Management in the Console, or ask your Rhino.fi account manager.
 
-Please note that activity below the set minimum amounts will not be processed.
+## Bridge and bridge+swap limits
 
-Rhino.fi also has a maximum \$ amount per token, per chain which can be bridged / bridge+swapped. This is to ensure an enterprise-grade experience for clients with optimal settlement times. The limits for a specific token on a specific chain can be found within the response of the `GET/config/{chain}/{token}` endpoint however if you have specific large transaction value activity above this then please do reach out as we can also set per-client transaction limits exceeding this.
+To avoid transactions whose value falls below the onchain costs, Rhino.fi sets a minimum deposit amount per token, per chain. For most clients and their end customers, this is well below the amounts they transact. If some of your transactions may fall close to or below it, contact your account manager: we may be able to set custom minimums for your account.
 
-Please note that activity above the set maximum amounts will not be processed.
+<Warning>
+  Transactions below the minimum amount are not processed.
+</Warning>
 
-The response within the  `POST/quote/bridge-swap/user` endpoint will inform if the transaction would fail due to limits being above/below the set values.
+Rhino.fi also sets a maximum USD amount per token, per chain that can be bridged or bridge+swapped, to keep settlement times fast. You can find the limits for a specific token on a specific chain with the [token config endpoint](/api-reference/bridge/configs/obtain-token-and-chain-details-for-swapping-andor-bridging-activity-for-a-specific-token-on-a-specific-chain) (`GET /bridge/config/{chain}/{token}`). If you need to send larger transactions, contact your account manager: we can set higher limits for your account.
 
-### 1:1 Limits
+<Warning>
+  Transactions above the maximum amount are not processed.
+</Warning>
 
-Deposit limits for 1:1 swap routes follow the same limits as standard SDA deposits.For very large individual transactions (above \$1M USD equivalent), contact your Rhino.fi account manager to confirm available liquidity. Volume based limits are applied to protect your app from abuse. These limits are customizable on a case by case basis.
+When you request a quote with `POST /bridge/quote/bridge-swap/user`, the response tells you if the transaction would fail because the amount is outside these limits. See [Errors](/api-integration/core-concepts#errors) for the error names.
 
-- Account level limit - the total 1:1 swap volume limit over all transactions within a specified time frame (expressed in days)
-- Recipient level limit - the total 1:1 swap volume limit per specific recipient
+## 1:1 Stablecoin Settlement limits
 
-Once limits are hit, the service falls back to the market rate. If a recipient hits their limit, only their transactions will fall back to the market rate.
+Deposits on 1:1 Stablecoin Settlement routes follow the same limits as standard SDA deposits. For very large single transactions (above \$1M USD equivalent), contact your account manager to confirm available liquidity.
 
-For more information of the 1:1 extension: [https://docs.rhino.fi/get-started/extensions/stablecoin-swaps](https://docs.rhino.fi/get-started/extensions/stablecoin-swaps)
+Volume-based limits also apply, to protect your app from abuse. They can be customized case by case:
 
-For prospects testing the Rhino.fi Stablecoin Activation Stack and for clients wishing to temporarily have lower limits during integration testing, these limits can be lowered. Please reach out to your Rhino.fi account manager to discuss your limit needs.
+- **Account-level limit:** the total 1:1 volume across all transactions within a set number of days.
+- **Recipient-level limit:** the total 1:1 volume for a single recipient.
+
+When a limit is reached, transactions fall back to the market rate. If a single recipient reaches their limit, only that recipient's transactions fall back.
+
+For prospects testing the Rhino.fi Stablecoin Activation Stack, and for clients who want lower limits during integration testing, these limits can be lowered temporarily. Contact your account manager to discuss your needs.
+
+For more on the extension, see [1:1 Stablecoin Settlement](/get-started/extensions/stablecoin-swaps).
+
+## Related
+
+- [Fees](/get-started/fees-and-limits): how pricing works
+- [Core concepts → Limits](/api-integration/core-concepts#limits): limits as they apply to API integrations
+- [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management): view and manage your limits

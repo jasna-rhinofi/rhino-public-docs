@@ -1,0 +1,92 @@
+---
+title: "Interacting with Bitcoin"
+---
+
+This page covers accepting native Bitcoin deposits through [Smart Deposit Addresses](/api-integration/smart-deposits). Bitcoin is currently deposit-only: you can't bridge to Bitcoin or deliver native BTC as a destination asset yet.
+
+<Note>
+  Bitcoin requires the [Tron, Solana and Bitcoin Access](/get-started/extensions/tron-access) extension, and is being rolled out client by client. It isn't available on trial accounts. Contact your account manager to enable it.
+</Note>
+
+## Create a Bitcoin deposit address
+
+Use `POST /sda/deposit-addresses` with `"BITCOIN"` in `depositChains`. A Bitcoin SDA is created the same way as an SDA on any other chain, but needs its own request: Bitcoin, Tron and Solana SDAs are each created separately, while one request can cover several EVM chains.
+
+Sample request, accepting BTC and settling to USDC on Base:
+
+```json
+{
+  "depositChains": ["BITCOIN"],
+  "destinationChain": "BASE",
+  "destinationAddress": "0x7c9cfcf64a02200f0b3fa4ffd1773758fc082749",
+  "tokenOut": "USDC"
+}
+```
+
+Sample response:
+
+```json
+[
+  {
+    "depositChain": "BITCOIN",
+    "depositAddress": "bc1pwvza3f5hz85h9xdsmar8vjznsta9un82r5m5rvdsyys56u4xg75qytn3t4",
+    "destinationChain": "BASE",
+    "destinationAddress": "0x7c9cfcf64a02200f0b3fa4ffd1773758fc082749",
+    "supportedTokens": [
+      {
+        "symbol": "BTC",
+        "minDepositLimitUsd": 10,
+        "maxDepositLimitUsd": 50000
+      }
+    ],
+    "isActive": true
+  }
+]
+```
+
+`supportedTokens` on a Bitcoin SDA always contains only `BTC`.
+
+## Choose a settlement asset
+
+- **Without `tokenOut`,** deposits settle as WBTC, if WBTC is available on the destination chain. This differs from other chains, where deposits settle in the token that was sent.
+- **With `tokenOut`,** deposits settle in that asset instead. If the route isn't supported, creating the address returns an error.
+
+### Deliver into a contract with Automated Onchain Actions
+
+You can configure a Bitcoin deposit address with an [Automated Onchain Action](/get-started/extensions/automated-onchain-actions) (`postBridgeData`) to deliver into a destination contract, such as a vault. As a safety measure, always set `tokenOut` to the asset the destination contract expects, even when an action is configured. For example, to accept BTC and deliver into a vault as USDT, set `tokenOut: "USDT"`.
+
+## Limits
+
+- **Minimum deposit:** the API returns a \$10 minimum (`minDepositLimitUsd`). The absolute minimum on Bitcoin is 5,000 sats.
+- **Maximum deposit:** \$50,000 per transaction at launch, expected to rise over time. Your account manager can arrange higher limits.
+
+## Speed
+
+A Bitcoin deposit is processed after one network confirmation. Confirmation time depends on Bitcoin network conditions and is typically 5–20 minutes, though heavy network traffic can make it longer.
+
+## Fees
+
+A flat \$1 fee applies to each Bitcoin deposit. You choose whether you or your end customer pays it. See [Tron, Solana and Bitcoin Access](/get-started/extensions/tron-access#who-pays).
+
+## Swap details in the history response
+
+Settling a Bitcoin deposit involves a currency conversion, so the history response for a Bitcoin SDA includes swap details in the `preSwap` and `postSwap` fields:
+
+- **`preSwap`** is always present. It shows BTC converting into the settlement asset, WBTC or USDC, which Rhino.fi uses as a middle step for liquidity.
+- **`postSwap`** is present only when the requested `tokenOut` differs from the settlement asset (for example USDT or EURC). It shows the settlement asset converting into `tokenOut`.
+
+The deposit is priced at the live BTC market rate when the deposit is confirmed. Above the maximum deposit limit, the settled amount may incur slippage.
+
+## Check status and history
+
+```text
+GET /sda/deposit-addresses/{depositAddress}/{depositChain}
+GET /sda/deposit-addresses/{depositAddress}/{depositChain}/history
+```
+
+See [Monitor an address](/api-integration/smart-deposits#3-monitor-an-address) for examples. The history endpoint requires a secret key.
+
+## Constraints
+
+- **One direction only.** Native BTC deposits settle into other supported assets. Converting other assets back into native BTC isn't supported yet.
+- **SDAs only.** Bitcoin is available through the API and the SDK, but only through Smart Deposit Addresses. The bridge quote endpoint doesn't support Bitcoin, so there are no committed quotes.

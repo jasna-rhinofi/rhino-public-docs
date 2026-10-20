@@ -3,45 +3,38 @@ title: "Rhino Console"
 description: "The Rhino Console is the web interface for managing your Rhino integration — transaction history, analytics, team settings, and configuration."
 ---
 
-## Rhino Console
-
-The Rhino Console is the web interface for managing your Rhino integration. It is available to all clients at [console.rhino.fi](https://console.rhino.fi).
-
----
-
 ## What the Console covers
 
 | Section | Description |
 | --- | --- |
-| **Transaction history** | Full history of all bridges, SDA deposits, and settlement events for your account |
-| **Analytics** | Volume, success rate, fee totals, and per-chain breakdown |
-| **Team settings** | Manage team members and access levels |
-| **API key management** | Create, rotate, and revoke API keys |
-| **Configuration** (coming soon) | View account-level settings, enabled Extensions, and fee configuration |
-| **Status & alerts** (coming soon) | Link to the Rhino status page; incident history |
-
----
+| **Transaction history** | Full history of all bridges, SDA deposits and settlement events for your account |
+| **Analytics** | Volume, success rate, fee totals and per-chain breakdown |
+| **API key management** | Create, rotate and revoke API keys |
+| **Integrate** | Register and manage your webhook URL under **Integrate → Webhooks** |
+| **Settings** | Manage team members and access levels, and see your **Usage**, including SDA usage against your limits |
 
 ## API keys
 
-API keys are created and managed in the Console. Each key is scoped to your account. Two key types are available:
+API keys are created and managed in the Console. Each key is scoped to your account. There are two types:
 
 | Key type | Use |
 | --- | --- |
-| `SECRET_` prefix | Full access — query history, manage addresses, required for sensitive operations |
-| Standard key | Quote generation, bridge execution, public reads |
+| **Secret key** (prefixed `SECRET_`) | Full access, including your transaction history and SDA search. Use it only in server-side code. |
+| **Public key** | Quotes, bridge execution and public reads. Safe to use in browser and mobile apps. |
 
-Store secret keys securely. They cannot be retrieved after creation — only rotated.
+Store secret keys securely, for example in a secrets manager, and never expose them in client-side code. See [Authentication](/api-integration/authentication) for which key to use where.
 
----
+## Webhooks
+
+Register one webhook URL per project under **Integrate → Webhooks**. Enter your base URL only: Rhino.fi adds `/rhinofi-event` to it. See [Track transactions](/api-integration/status-history#receive-webhooks) for the events you receive.
 
 ## Access
 
-The Console requires you to log in using a Google workspace account. You can invite teammates to contribute and manage your project on the Rhino Console.
-
----
+The Console requires you to sign in with a Google Workspace account. You can invite teammates to help manage your project.
 
 ## Related
 
-- [API Keys](/get-started/api-keys) — how to generate and use keys programmatically
-- [Authentication](/api-integration/authentication) — how to authenticate API requests with your keys
+- [Authentication](/api-integration/authentication): API key types, and how to authenticate API requests with your keys
+- [Track transactions](/api-integration/status-history): webhooks, status and history
+- [Limits](/get-started/limits): the limits that apply to your account
+- [Status page](/general/status-page): Rhino.fi system status and incidents
