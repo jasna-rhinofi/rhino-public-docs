@@ -81,7 +81,7 @@
                   "sdk/bridge-and-swap",
                   "sdk/bridge-api",
                   "interacting-with-stellar",
-                  "untitled-page"
+                  "interacting-with-bitcoin"
                 ]
               },
               "sdk/concepts",
@@ -126,7 +126,7 @@
           {
             "group": "API Integration",
             "pages": [
-              "api-integration/introduction-1",
+              "api-integration/introduction",
               "api-integration/authentication",
               "api-integration/core-concepts",
               "api-integration/smart-deposits",
@@ -248,6 +248,10 @@
     {
       "source": "/get-started/sda",
       "destination": "/api-integration/smart-deposits"
+    },
+    {
+      "source": "/get-started/api-keys",
+      "destination": "/api-integration/authentication"
     }
   ],
   "logo": {
