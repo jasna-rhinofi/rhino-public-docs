@@ -2,36 +2,53 @@
 title: 'Server setup'
 ---
 
-Rhino webhooks deliver real-time transaction status events to your server — covering deposit detection, settlement confirmation, and action outcomes for Smart Deposit Addresses and bridges.
+Rhino.fi webhooks send real-time transaction status events to your server, covering deposit detection, settlement confirmation and action outcomes for Smart Deposit Addresses and bridge transfers.
 
-Setting up a webhook server involves creating an HTTP endpoint that can receive POST requests from Rhino.fi, process the webhook payloads, and respond appropriately. This guide covers the essential components and best practices for webhook server implementation.
+To receive them, you set up an HTTP endpoint that accepts POST requests from Rhino.fi, processes the payload and responds. This page covers the requirements and best practices.
 
-## Basic Server Requirements
+## Requirements
 
-### **Endpoint**
-Your endpoint must be a `POST` endpoint and called `/rhinofi-event`.
+### Endpoint
 
-It will receive a signature header called: `X-Rhino-Signature` which can be then verified ([see verification details](/webhook/verify-webhook-signature)).
+Your endpoint must accept `POST` requests at the path `/rhinofi-event`. When you register your webhook, enter only the base URL. Rhino.fi adds `/rhinofi-event` for you (see [Subscribe to webhooks](/webhook/subscribe)).
 
-The received body structure will be the following:
-```
+Each request includes an `X-Rhino-Signature` header, which you use to [verify the request](/webhook/verify-webhook-signature).
+
+The request body looks like this:
+
+```typescript
 {
-  event: WebhookEvent, // check the Webhook Events section for more details
+  event: WebhookEvent, // see the events list for each event's payload
   eventId: string,
   ts: number,
 }
 ```
 
-It should return a 204 status with no content.
+See the [events list](/webhook/events-list) for every `WebhookEvent`.
 
-### **HTTPS Only**
-Your webhook endpoint must use HTTPS to ensure secure data transmission. Rhino.fi will not send webhooks to HTTP endpoints.
+Your endpoint must return a `204` status with no content.
 
-### **Public Accessibility**
-The endpoint must be publicly accessible. Rhino.fi will provide a signature when calling your endpoint for you to be able to identify the sender.
+### HTTPS only
 
-Your endpoint might implement rate limiting to prevent anyone from abusing it.
+Your endpoint must use HTTPS. Rhino.fi does not send webhooks to HTTP endpoints.
 
-### **Reliable Uptime**
-Ensure your server has good uptime. Failed webhook deliveries will be retried a few times, but consistent failures may result in events being lost.
+### Public access
 
+Your endpoint must be reachable from the internet. Use the signature header to confirm that each request comes from Rhino.fi. You can rate-limit the endpoint to prevent abuse, but make sure the limits don't block Rhino.fi's requests.
+
+### Reliable uptime
+
+Keep your server available. Failed deliveries are retried a few times, but if they keep failing, the event is not delivered again. If your server was down, use [get missed events](/webhook/get-missed-events) to recover anything you missed.
+
+## Best practices
+
+- **Verify every request.** Reject any request whose signature doesn't verify.
+- **Respond quickly.** Return `204` as soon as you've received and stored the event, and do any slow processing afterwards. This avoids timeouts and unnecessary retries.
+- **Handle duplicates.** Because failed deliveries are retried, you may receive the same event more than once. Use `eventId` to skip events you've already processed.
+- **Recover after downtime.** After any outage, fetch [missed events](/webhook/get-missed-events) and process them.
+
+## Next steps
+
+- [Verify webhook signatures](/webhook/verify-webhook-signature)
+- [Events list](/webhook/events-list)
+- [Track transactions](/api-integration/status-history)

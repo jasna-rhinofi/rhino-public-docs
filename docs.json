@@ -30,11 +30,6 @@
           "href": "https://rhino.fi/"
         },
         {
-          "anchor": "Bridge now",
-          "icon": "rainbow",
-          "href": "https://app.rhino.fi/bridge"
-        },
-        {
           "anchor": "Blog",
           "icon": "newspaper",
           "href": "https://rhino.fi/blog/"
@@ -52,8 +47,6 @@
               "get-started/what-is-rhino",
               "get-started/fees-and-limits",
               "get-started/limits",
-              "get-started/sda",
-              "get-started/api-keys",
               "get-started/rhino-console",
               {
                 "group": "Extensions",
@@ -130,15 +123,11 @@
             "pages": [
               "api-integration/introduction",
               "api-integration/authentication",
-              {
-                "group": "Bridge & Swap",
-                "pages": [
-                  "api-integration/bridge",
-                  "api-integration/swap",
-                  "api-integration/status-history"
-                ]
-              },
-              "api-integration/smart-deposits"
+              "api-integration/core-concepts",
+              "api-integration/smart-deposits",
+              "api-integration/bridge",
+              "api-integration/status-history",
+              "api-integration/go-live"
             ]
           },
           {
@@ -246,6 +235,18 @@
     {
       "source": "/get-started/post-bridge-actions",
       "destination": "/get-started/extensions/automated-onchain-actions"
+    },
+    {
+      "source": "/api-integration/swap",
+      "destination": "/api-integration/bridge"
+    },
+    {
+      "source": "/get-started/sda",
+      "destination": "/api-integration/smart-deposits"
+    },
+    {
+      "source": "/get-started/api-keys",
+      "destination": "/api-integration/authentication"
     }
   ],
   "logo": {

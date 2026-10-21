@@ -3,64 +3,43 @@ title: "1:1 Stablecoin Settlement"
 description: "USDT↔USDC conversion at a guaranteed 1:1 rate, no slippage, no market exposure."
 ---
 
-## 1:1 Stablecoin Settlement
-
 **Extension tier:** Premium
 
-When the 1:1 Stablecoin Settlement extension is enabled, cross-stable conversions between USDT and USDC are executed at a guaranteed 1:1 rate. There is no slippage, no market exposure, and no variance between the deposited amount and the settled amount (net of the standard bridge fee).
-
----
+When the 1:1 Stablecoin Settlement extension is enabled, conversions between USDT and USDC run at a guaranteed 1:1 rate, within the guardrails and limits below. There is no slippage, no market exposure and no difference between the deposited amount and the settled amount, net of fees.
 
 ## The problem this solves
 
-Without this extension, a cross-stable swap (e.g. a user deposits USDT and the destination expects USDC) is routed through a market. The settled amount depends on the USDT/USDC market price at the time of execution. In thin conditions, this can deviate from 1:1 by a meaningful amount.
+Without this extension, a cross-stable swap (for example, a user deposits USDT and the destination expects USDC) is routed through a market. The settled amount depends on the USDT/USDC price at the time of execution, and in thin markets it can move noticeably away from 1:1.
 
-For applications that display a quoted settlement amount to end users — onboarding flows, payment screens, balance estimations — any variance creates a UX problem and potential customer support burden.
-
----
+For applications that show a settlement amount to end users, such as onboarding flows, payment screens or balance estimates, any difference creates a poor experience and extra support requests.
 
 ## How it works
 
-Rhino maintains its own USDT and USDC reserves on supported chains. When a cross-stable deposit arrives, Rhino credits the destination from its reserves at exactly 1:1, then rebalances its own positions off the critical path.
+Rhino.fi holds its own USDT and USDC reserves on supported chains. When a cross-stable deposit arrives, Rhino.fi credits the destination from its reserves at exactly 1:1, then rebalances its own positions separately. For your user, the USDT amount deposited equals the USDC amount settled, minus fees.
 
-The user's experience is: deposited USDT amount equals settled USDC amount (minus fee).
+This works in both directions, USDT → USDC and USDC → USDT, on every supported chain where both tokens are available.
 
-This applies to:
+### Guardrails
 
-- USDT → USDC
-- USDC → USDT
+Rhino.fi provides 1:1 settlement while the USDT/USDC market rate stays within 3 basis points of 1:1. This is the Rhino.fi guardrail.
 
-Both directions, across all supported chains where USDT and USDC are both available.
-
-Rhino.fi provides 1:1 support when the rate between USDT and USDC is up to 3bps (the Rhino.fi guardrail), it is then possible for client's who have the Advanced Fee and Limit Management extension to set an additional Client guardrail and continue providing a 1:1 experience for customers between the Rhino.fi and Client guardrail. Thereafter the activity will return to market rate.
-
----
+With the [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management) extension, you can set your own wider guardrail, and Rhino.fi continues to settle at 1:1 up to it. Beyond your guardrail, settlement returns to the market rate.
 
 ## Integration
 
-No API change is required. If your account has this extension enabled, any SDA or bridge request that specifies a cross-stable `tokenOut` will automatically use 1:1 pricing.
+No API change is needed. If your account has this extension enabled, any SDA or bridge request with a cross-stable `tokenOut` automatically uses 1:1 pricing. See [Smart Deposit Addresses](/api-integration/smart-deposits#settle-in-a-different-token) and [Bridge transfers](/api-integration/bridge#swap-tokens-during-a-transfer).
 
-To confirm this extension is active on your account, check the [Rhino Console](/get-started/rhino-console) under Configuration, or contact your account representative.
-
----
+To confirm the extension is active on your account, contact your account manager. With Advanced Fee & Limit Management, you can also see which of your projects have 1:1 enabled in the Rhino.fi Console.
 
 ## Limits
 
-Deposit limits for 1:1 swap routes follow the same limits as standard SDA deposits.
+1:1 settlement follows the same deposit limits as standard SDA deposits, plus account-level and recipient-level volume limits that protect your app from abuse. When a limit is reached, settlement falls back to the market rate, and if only one recipient reaches their limit, only that recipient's transactions fall back. For transactions above \$1M USD equivalent, contact your account manager to confirm available liquidity.
 
-For very large individual transactions (above \$1M USD equivalent), contact your account representative to confirm available liquidity.
-
-Volume based limits are applied to protect your app from abuse. These limits are customizable on a case by case basis.
-
-- Account level limit - the total 1:1 swap volume limit over all transactions within a specified time frame (expressed in days)
-- Recipient level limit - the total 1:1 swap volume limit per specific recipient
-
-Once limits are hit, the service falls back to the market rate. If a recipient hits their limit, only their transactions will fall back to the market rate.
-
----
+See [Limits](/get-started/limits) for the details.
 
 ## Related
 
-- [Smart Deposit Addresses](/get-started/sda)
-- [Fees & Limits](/get-started/fees-and-limits)
+- [Smart Deposit Addresses](/api-integration/smart-deposits)
+- [Fees](/get-started/fees-and-limits)
+- [Limits](/get-started/limits)
 - [Extensions overview](/get-started/extensions)

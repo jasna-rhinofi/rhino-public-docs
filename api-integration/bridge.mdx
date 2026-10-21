@@ -1,161 +1,313 @@
 ---
-title: "Making a bridge"
-description: "This guide walks you through integrating our bridge API into your application. By following these steps, you’ll be able to transfer assets between chains using our API and smart contract interactions."
+title: "Bridge transfers"
+description: "Move tokens between chains, or swap them, with a quote, a commit and one onchain transaction."
 ---
 
-## Quickstart
+Use bridge transfers when your platform, or your user's connected wallet, holds the funds and signs the deposit. One flow covers three use cases:
 
-The whole process consists of:
+| Use case | What it does | Example |
+| --- | --- | --- |
+| **Bridge** | Moves the same token from one chain to another | USDC on Base → USDC on Arbitrum |
+| **Cross-chain swap** | Moves funds to another chain and changes the token | USDT on Base → USDC on Arbitrum |
+| **Same-chain swap** (EVM only) | Changes the token without leaving the chain | USDT on Base → USDC on Base |
+
+<Tip>
+  If you collect deposits from end customers, [Smart Deposit Addresses](/api-integration/smart-deposits) are usually the better fit: your customers, or your platform after consolidating funds, send to an address and Rhino.fi detects and settles each deposit. Use bridge transfers when you or your end customers sign each transfer from a wallet, for example for withdrawals, treasury movements or in-app transfers. Many clients use both, with SDAs for deposits and bridge transfers for withdrawals.
+</Tip>
+
+## How it works
 
 <Steps>
-  <Step title="Authentication">
-    Get a JWT to authenticate your requests.
+  <Step title="Load configs">
+    Get the chains, tokens and contract addresses you need.
   </Step>
-  <Step title="Fetching bridge configs">
-    Retrieve supported chains and tokens.
+  <Step title="Request a quote">
+    Get the fees, amounts and expiry time for the transfer.
   </Step>
-  <Step title="Getting a bridge quote">
-    Obtain transaction details, including fees.
+  <Step title="Commit the quote">
+    Lock in the quote. Its `quoteId` identifies the transfer from here on.
   </Step>
-  <Step title="Committing the quote">
-    Confirm the transaction.
+  <Step title="Deposit onchain">
+    Send the deposit transaction on the source chain, referencing the quote ID (`quoteId`).
   </Step>
-  <Step title="Executing the bridge transaction">
-    Interact with the smart contract to complete the transfer.
+  <Step title="Track settlement">
+    Receive webhooks or poll the status endpoint until the transfer is executed.
   </Step>
 </Steps>
 
----
+The examples use the `rhinoFetch` helper from [Authentication](/api-integration/authentication#keep-the-token-fresh) and [ethers v6](https://docs.ethers.org/v6/) for EVM chains.
 
-### 1. Authentication
+## 1. Load configs
 
-All non-public API endpoints are authenticated using a JSON Web Token. To authenticate your requests, include the token in the `Authorization` header. [Learn about API authentication](/api-integration/authentication).
+```javascript
+const configs = await rhinoFetch('/bridge/configs', { auth: false })
 
-### 2. Fetch Bridge Configs
+const base = configs.BASE
+// base.contractAddress        bridge contract to deposit into
+// base.tokens.USDC.address    token contract address
+// base.tokens.USDC.decimals   token decimals
+// base.nativeTokenName        e.g. "ETH"
+```
 
-Retrieve available chains and supported tokens to ensure your transaction uses the correct parameters.
+For cross-chain and same-chain swaps, also load the swap token list:
 
-```javascript getBridgeConfigs.js
-export const getBridgeConfigs = async () => {
-  const request = await fetch('https://api.rhino.fi/bridge/configs')
-  return request.json()
+```javascript
+const swapTokens = await rhinoFetch('/bridge/bridge-swap-token-configs', { auth: false })
+// swapTokens.BASE.USDT -> { address, decimals, ... }
+```
+
+## 2. Request a quote
+
+```javascript
+const quote = await rhinoFetch('/bridge/quote/bridge-swap/user', {
+  method: 'POST',
+  body: {
+    chainIn: 'BASE',
+    chainOut: 'ARBITRUM',
+    tokenIn: 'USDC',
+    tokenOut: 'USDC',
+    amount: '250',
+    mode: 'pay',
+    depositor: '0xSourceWallet',
+    recipient: '0xDestinationWallet',
+  },
+})
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `chainIn`, `chainOut` | Yes | Source and destination chains |
+| `tokenIn`, `tokenOut` | Yes | Token sent and token received. Use the same symbol for a plain bridge. |
+| `amount` | Yes | A decimal string in whole token units. Its meaning depends on `mode`. |
+| `mode` | Yes | `pay`: `amount` is what you send, and fees come out of it. `receive`: `amount` is what the recipient gets, and fees are added on top. |
+| `depositor` | Yes | Address that will send the deposit on `chainIn` |
+| `recipient` | Yes | Address that receives funds on `chainOut`, in that chain's format |
+| `amountNative` | No | Native gas token to deliver to the recipient on `chainOut` (Gas Boost), in whole units. Omit if not needed. |
+| `webhookUrl` | No | Webhook URL for this transfer only |
+| `refundAddress` | No | Where to return funds if a swap cannot complete |
+
+### Choose a mode
+
+`mode` decides what `amount` means. With `pay`, `amount` is what the depositor sends and fees come out of it, so the recipient gets slightly less. With `receive`, `amount` is exactly what the recipient gets and fees are added on top. Use `receive` when the recipient must get a precise amount, for example to settle an invoice.
+
+### Gas Boost
+
+The recipient may need the destination chain's native token (such as ETH) to pay gas for their next transaction. Set `amountNative` to deliver some with the transfer. It comes out of the amount received, so it can't be larger than that amount.
+
+### Webhooks
+
+Set a webhook URL once for your project in the Rhino.fi Console. Pass `webhookUrl` in the quote only to send events for this transfer to a different URL.
+
+### Refund address
+
+Set `refundAddress` only if the depositor can reliably access that address, such as a wallet they control. If funds come from a pooled source like an exchange, leave it unset. Your account manager then handles each refund and returns funds to a verified address.
+
+### Quote response
+
+The response includes:
+
+| Field | Description |
+| --- | --- |
+| `quoteId` | The [quote ID](/api-integration/core-concepts#the-quote-id) that identifies the transfer |
+| `payAmount` | Exact amount the depositor must send, in whole units |
+| `receiveAmount` | Amount the recipient will receive |
+| `minReceiveAmount` | Swaps only: the minimum guaranteed output |
+| `fees` | Fee breakdown. Many fields relate to legacy pricing; for subscription clients, most fees are covered by the subscription. See [Fees](/api-integration/core-concepts#fees). |
+| `flowCredits` | Flow Credits the transfer will consume, for clients billed in Flow Credits. See [Fees](/get-started/fees-and-limits). |
+| `estimatedDuration` | Estimated time to settlement, in milliseconds. An estimate, not a guarantee. |
+| `speed` | Settlement speed: `fast`, `standard` or `slow`. See [Settlement speed](#settlement-speed). |
+| `expiresAt` | Deadline for committing the quote |
+| `isAtomicSwap` | `true` for a same-chain swap |
+
+See the [API reference](/api-reference/bridge/quote/generate-a-bridgebridge+swap-quote) for the full schema.
+
+## 3. Commit the quote
+
+Commit before `expiresAt`. Committing confirms that you intend to send the deposit.
+
+- **If you don't commit in time,** the quote expires and is deleted. Quotes currently expire after about three minutes, but always rely on `expiresAt`. Committing an expired quote returns an error saying the quote doesn't exist or has expired, so request a new quote.
+- **Commit each quote once.** Committing a quote that is already committed returns an error.
+
+```javascript
+const { quoteId } = await rhinoFetch(`/bridge/quote/commit/${quote.quoteId}`, {
+  method: 'POST',
+})
+```
+
+Pass the `quoteId` to the deposit in the next step. To look the transfer up later, you can use either the `quoteId` or the deposit transaction hash.
+
+## 4. Deposit onchain
+
+Send exactly `payAmount` to the bridge contract on `chainIn`, and pass the quote ID (`quoteId`) as the `commitmentId`. The bridge contract has two deposit functions:
+
+- `depositWithId(token, amount, commitmentId)` for ERC-20 tokens. It requires an allowance for the bridge contract.
+- `depositNativeWithId(commitmentId)` for the chain's native token, sent as the transaction value.
+
+```javascript deposit-evm.js
+import { Contract, parseUnits } from 'ethers'
+
+const BRIDGE_ABI = [
+  'function depositWithId(address token, uint256 amount, uint256 commitmentId)',
+  'function depositNativeWithId(uint256 commitmentId) payable',
+]
+const ERC20_ABI = [
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)',
+]
+
+export async function ensureAllowance(signer, tokenAddress, spender, amount) {
+  const erc20 = new Contract(tokenAddress, ERC20_ABI, signer)
+  const current = await erc20.allowance(await signer.getAddress(), spender)
+  if (current < amount) {
+    const tx = await erc20.approve(spender, amount)
+    await tx.wait()
+  }
+}
+
+/**
+ * Sends the bridge deposit for a committed quote on an EVM chain.
+ * `token` is { address, decimals } for an ERC-20, or null for the native token.
+ */
+export async function depositToBridge({ signer, chainConfig, token, payAmount, quoteId }) {
+  const bridge = new Contract(chainConfig.contractAddress, BRIDGE_ABI, signer)
+  const commitmentId = BigInt(`0x${quoteId}`)
+
+  if (token === null) {
+    const tx = await bridge.depositNativeWithId(commitmentId, { value: parseUnits(payAmount, 18) })
+    return tx.wait()
+  }
+
+  const amount = parseUnits(payAmount, token.decimals)
+  await ensureAllowance(signer, token.address, chainConfig.contractAddress, amount)
+  const tx = await bridge.depositWithId(token.address, amount, commitmentId)
+  return tx.wait()
 }
 ```
 
-For the exact response format and more details, see the [API Reference](/api-reference/bridge/configs/obtain-token-and-chain-details-for-swapping-andor-bridging-activity).
+For non-EVM source chains, use the chain's contract guide: [Solana](/contracts/solana), [Starknet](/contracts/starknet), [TON](/contracts/ton) or [TRON](/contracts/tron).
 
-### 3. Get a Bridge Quote
+## 5. Track settlement
 
-Before executing a bridge transaction, you must generate a quote that provides transaction details, including fees and amounts.
+Rhino.fi detects the deposit and settles on `chainOut`. The quote's `estimatedDuration` gives the estimated time in milliseconds. It is an estimate, not a guarantee. Subscribe to webhooks, or poll `GET /bridge/history/bridge/{quoteId}`, until the state is `EXECUTED`. See [Track transactions](/api-integration/status-history).
 
-```javascript getBridgeUserQuote.js
-export const getBridgeUserQuote = async (payload, jwt) => {
-  const request = await fetch(`https://api.rhino.fi/bridge/quote/bridge-swap/user`, {
-    headers: {
-      "content-type": "application/json",
-      "authorization": jwt
-    },
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
+### Settlement speed
 
-  return request.json()
-}
+Rhino.fi picks the speed for each transfer automatically, based on the amount, the confirmations the source chain needs and the liquidity on the destination chain. You can't choose it. The quote's `speed` field tells you which applies.
+
+| Speed | When it applies | Typical time |
+| --- | --- | --- |
+| `fast` | Transfers up to \$50,000 from an EVM source chain. Processing can start after one confirmation. | 3–15 seconds |
+| `standard` | The default, on all supported chains | 20–40 seconds |
+| `slow` | Very large transfers, or amounts above the destination chain's available liquidity. Rhino.fi rebalances liquidity before settling. | 8–20 minutes |
+
+Smart Deposit Address deposits follow the same speeds, plus up to about 30 seconds for deposit detection. See [Bridge speed](https://learn.rhino.fi/articles/8257872655-bridge-speed) for details.
+
+## Swap tokens during a transfer
+
+To receive a different token from the one you send, set `tokenOut` to that token. The flow is unchanged, with two differences:
+
+- Read `tokenIn`'s address and decimals from the [swap token list](/api-reference/bridge/configs/get-all-token-configs-for-bridge-and-swap), not from `configs`.
+- The quote includes `minReceiveAmount`, the minimum guaranteed output. If the token price moves significantly after the quote, the transfer is refunded rather than settled, and you receive a `BRIDGE_REFUNDED` webhook.
+
+## Same-chain swaps
+
+When `chainIn` and `chainOut` are the same EVM chain, the quote returns `isAtomicSwap: true`. The swap runs in a single transaction through a different contract:
+
+1. For ERC-20 tokens, approve `configs[chainIn].sameChainSwapsAddress`, not `contractAddress`. Native tokens need no approval.
+2. Fetch the prepared transaction with `GET /bridge/swap/calldata/{quoteId}`.
+3. Send it as returned.
+
+```javascript
+const { calldata } = await rhinoFetch(`/bridge/swap/calldata/${quoteId}`)
+const { to, data, value } = JSON.parse(calldata)
+
+const tx = await signer.sendTransaction({ to, data, value: BigInt(value ?? 0) })
+await tx.wait()
 ```
 
-For the exact request / response format and more details, see the [API Reference](/api-reference/bridge/quote/generate-a-bridgebridge+swap-quote).
+<Warning>
+  Do not call `depositWithId` or `depositNativeWithId` for a same-chain swap. Rhino.fi rejects bridge deposits made against a same-chain swap commitment.
+</Warning>
 
-### 4. Commit the Quote
+## Full example
 
-Once you have a quote, you must commit it to confirm the transaction before execution. The deadline to commit a quote is provided within the `expiresAt` param within the quote response.
+This example handles all three cases. It assumes `rhino.js` from [Authentication](/api-integration/authentication#keep-the-token-fresh) and `deposit-evm.js` from above.
 
-```javascript commitBridgeUserQuote.js
-export const commitBridgeUserQuote = async (quoteId, jwt) => {
-  const request = await fetch(`https://api.rhino.fi/bridge/quote/commit/${quoteId}`, {
+```javascript bridge-tokens.js
+import { parseUnits } from 'ethers'
+import { rhinoFetch } from './rhino.js'
+import { depositToBridge, ensureAllowance } from './deposit-evm.js'
+
+export async function bridgeTokens({ signer, chainIn, chainOut, tokenIn, tokenOut, amount, recipient }) {
+  const isSwap = tokenIn !== tokenOut
+  const [configs, swapTokens] = await Promise.all([
+    rhinoFetch('/bridge/configs', { auth: false }),
+    isSwap ? rhinoFetch('/bridge/bridge-swap-token-configs', { auth: false }) : null,
+  ])
+  const chainConfig = configs[chainIn]
+
+  // 1. Quote
+  const quote = await rhinoFetch('/bridge/quote/bridge-swap/user', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'authorization': jwt
-    }
+    body: {
+      chainIn, chainOut, tokenIn, tokenOut, amount,
+      mode: 'pay',
+      depositor: await signer.getAddress(),
+      recipient,
+    },
   })
 
-  return request.json()
+  // 2. Commit
+  const { quoteId } = await rhinoFetch(`/bridge/quote/commit/${quote.quoteId}`, {
+    method: 'POST',
+  })
+
+  // 3. Resolve the token being sent (null = the chain's native token)
+  const token = tokenIn === chainConfig.nativeTokenName
+    ? null
+    : (isSwap ? swapTokens[chainIn][tokenIn] : chainConfig.tokens[tokenIn])
+
+  // 4a. Same-chain swap: approve the swap contract, then send the prepared calldata
+  if (quote.isAtomicSwap) {
+    if (token) {
+      const amountIn = parseUnits(quote.payAmount, token.decimals)
+      await ensureAllowance(signer, token.address, chainConfig.sameChainSwapsAddress, amountIn)
+    }
+    const { calldata } = await rhinoFetch(`/bridge/swap/calldata/${quoteId}`)
+    const { to, data, value } = JSON.parse(calldata)
+    const tx = await signer.sendTransaction({ to, data, value: BigInt(value ?? 0) })
+    await tx.wait()
+    return quoteId
+  }
+
+  // 4b. Bridge or cross-chain swap: deposit into the bridge contract
+  await depositToBridge({ signer, chainConfig, token, payAmount: quote.payAmount, quoteId })
+  return quoteId
 }
 ```
 
-For the exact request / response format and more details, see the [API Reference](/api-reference/bridge/quote/commit-an-already-generated-quote).
+```javascript Usage
+import { JsonRpcProvider, Wallet } from 'ethers'
+import { bridgeTokens } from './bridge-tokens.js'
 
-### 5. Execute the Bridge Transaction
+// Use your own signer here: a custody provider, MPC wallet or hardware signer.
+const signer = new Wallet(process.env.EVM_PRIVATE_KEY, new JsonRpcProvider(process.env.BASE_RPC_URL))
 
-Now, you can execute the bridge transaction by interacting with the smart contract.
-
-See [examples](/contracts/contract-examples) for interacting with the bridge smart contracts across different blockchain environments.
-
-### 6. Full Example
-
-Here’s the complete implementation combining all the steps above:
-
-```javascript index.js
-import { getBridgeUserQuote } from "./getBridgeUserQuote";
-import { getBridgeConfigs } from "./getBridgeConfigs";
-import { commitBridgeUserQuote } from "./commitBridgeUserQuote";
-
-const JWT = 'YOUR_JWT'; // Replace with your JWT generated from our API
-
-const amount = '3';
-const chainIn = 'BASE';
-const chainOut = 'SOLANA';
-const token = 'USDT';
-const depositorAddress = '0x0000000000000000000000000000000000000000'; // Replace with your depositor address
-const recipientAddress = '0x0000000000000000000000000000000000000000'; // Replace with your recipient address
-
-const bridge = async () => {
-  // Get bridge configs to determine supported chains and tokens or later use for the contract call
-  const configs = await getBridgeConfigs();
-
-  // Get a bridge quote for the transaction
-  const quote = await getBridgeUserQuote({
-    amount,
-    chainIn,
-    chainOut,
-    tokenIn: token,
-    tokenOut: token,
-    mode: 'receive',
-    depositor: depositorAddress,
-    recipient: recipientAddress,
-    amountNative: '0'
-  }, JWT);
-
-  if (!quote?.quoteId) throw new Error('Failed to generate user quote.');
-
-  // Commit the quote to confirm the transaction when you are ready to send on-chain
-  const commitResult = await commitBridgeUserQuote(quote.quoteId, JWT);
-
-  if (!commitResult?.quoteId) throw new Error('Failed to commit user quote.');
-
-  const chainConfig = configs[chainIn];
-
-  // Execute the bridge transaction by interacting with the smart contract -- see contract examples section on exact implementation
-  await callBridgeContract({
-    chainConfig,
-    amount: quote.payAmount,
-    token,
-    commitmentId: commitResult.quoteId,
-    callback: (hash) => console.info('Transaction hash:', hash)
-  });
-};
-
-bridge();
+const quoteId = await bridgeTokens({
+  signer,
+  chainIn: 'BASE',
+  chainOut: 'ARBITRUM',
+  tokenIn: 'USDT',
+  tokenOut: 'USDC',
+  amount: '250',
+  recipient: '0xDestinationWallet',
+})
 ```
 
-We recommend using the [SDK](https://docs.rhino.fi/sdk/bridge-functions/bridge) for a simpler bridging experience.
-
-For a detailed breakdown of API endpoints and parameters, check the [API Reference](/api-reference).
-
-Further examples can be found within the [bridge-examples README](https://github.com/rhinofi/bridge-examples).
+More examples for EVM, Solana and TON are in the [bridge-examples repository](https://github.com/rhinofi/bridge-examples).
 
 ## Next steps
 
-For the smart contract integration see - [contract examples](/contracts/contract-examples)
-
-To track your bridge transaction status, see [Bridge Status & History](/api-integration/status-history).
+<Card title="Track transactions" icon="chart-line" href="/api-integration/status-history">
+  Follow each transfer to settlement and reconcile your history.
+</Card>

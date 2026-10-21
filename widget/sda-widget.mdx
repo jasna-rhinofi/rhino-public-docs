@@ -7,7 +7,7 @@ import RequestApiKey from '/snippets/request-api-key.mdx'
 
 ## Embedding the Rhino.fi SDA Widget (iframe)
 
-You can easily embed the Rhino.fi SDA Widget into any site using a simple `<iframe>`. It provides a complete UI for generating Smart Deposit Addresses and bridging into a destination address, with no installation or bundling required.
+You can embed the Rhino.fi SDA Widget into any site with a simple `<iframe>`. It provides a complete UI for creating Smart Deposit Addresses and settling deposits to a destination address, with no installation or bundling.
 
 {/*
 ## Live Preview
@@ -22,39 +22,43 @@ See the SDA widget in action:
 
 ### ⚡ Quick Start
 
-You can either customize your widget visually using our playground **or** use the example code below directly.
+You can design your widget visually in our playground, **or** use the example code below directly.
 
 <Card title="Customize Your Theme" icon="wrench" href="https://playground.rhino.fi/">
   Use our playground to visually design and preview your widget, then copy the embed code.
 </Card>
 
-Paste the following HTML code where you want the widget to appear:
+Paste this HTML where you want the widget to appear:
 
 ```html
 <iframe
-  src="https://address.rhino.fi/?apiKey=YOUR_API_KEY&chainIn=ETHEREUM&chainOut=BASE&token=USDC&recipient=0xYOUR_RECIPIENT_ADDRESS"
-  style="width: 400px; height: 565px; border: none"
+  src="https://address.rhino.fi/?apiKey=YOUR_PUBLIC_API_KEY&chainIn=ETHEREUM&chainOut=BASE&token=USDC&recipient=0xYOUR_RECIPIENT_ADDRESS"
+  style="width: 400px; height: 581px; max-width: 100%; border: none"
   scrolling="no"
 />
 ```
 
-Replace `YOUR_API_KEY` with your actual Rhino.fi API key and `0xYOUR_RECIPIENT_ADDRESS` with the destination address you want to receive funds at.
+Replace `YOUR_PUBLIC_API_KEY` with your Rhino.fi **public** API key, and `0xYOUR_RECIPIENT_ADDRESS` with the address that should receive the funds.
 
-Unlike the bridge widget, the SDA widget has no default configuration — `chainIn`, `chainOut`, `token`, and `recipient` are all required query params.
+<Warning>
+  Always use a **public** key in the widget. The key is part of the iframe URL, so anyone visiting your page can see it. Never use a secret key here: it gives access to your full transaction history. See [Authentication](/api-integration/authentication#choose-a-key-type).
+</Warning>
+
+Unlike the [bridge widget](/widget/widget), the SDA widget has no default configuration: `chainIn`, `chainOut`, `token` and `recipient` are all required.
 
 <RequestApiKey />
 
 ## Customization
 
-You can customize the widget's appearance and default values using URL query parameters. Here's a quick overview:
+You can customize the widget's appearance and default values with URL query parameters:
 
 | Query Param       | Required | Description                             | Example                          |
 | ----------------- | :------: | --------------------------------------- | :------------------------------: |
-| <b> apiKey</b>    | ✅       | API key to authenticate                 | `apiKey=YOUR_API_KEY`            |
+| <b> apiKey</b> | ✅ | Your **public** API key | `apiKey=YOUR_PUBLIC_API_KEY` |
 | <b> chainIn</b>   | ✅       | Source chain                            | `chainIn=ETHEREUM`               |
 | <b> chainOut</b>  | ✅       | Destination chain                       | `chainOut=BASE`                  |
 | <b> token</b>     | ✅       | Source token                            | `token=USDT`                     |
-| <b> recipient</b> | ✅       | Destination (recipient) address         | `recipient=0x0`                  |
+| <b> recipient</b> | ✅ | Destination (recipient) address | `recipient=0xYOUR_RECIPIENT_ADDRESS` |
 | <b> tokenOut</b>  |          | Destination token                       | `tokenOut=USDC`                  |
 | <b> amount</b>    |          | Pre-fills the amount in the deposit QR code | `amount=10`                  |
 | <b> mode</b>      |          | Widget mode (light or dark)             | `mode=dark`                      |
@@ -62,9 +66,9 @@ You can customize the widget's appearance and default values using URL query par
 
 ## 🎨 Theming
 
-You can customize the appearance of the widget by passing a `theme` query param in URL-encoded JSON format.
+You can customize how the widget looks by passing a `theme` query param as URL-encoded JSON.
 
-Supported Theme Properties
+Supported theme properties:
 
 ```ts
 type WidgetTheme = {
@@ -90,12 +94,17 @@ type WidgetTheme = {
 }
 ```
 
-Example with custom theme:
+Example with a custom theme:
 
 ```html
 <iframe
-  src="https://address.rhino.fi/?apiKey=YOUR_API_KEY&mode=light&theme=%7B%22colors%22%3A%7B%22primary%22%3A%22red%22%7D%7D"
+  src="https://address.rhino.fi/?apiKey=YOUR_PUBLIC_API_KEY&chainIn=ETHEREUM&chainOut=BASE&token=USDC&recipient=0xYOUR_RECIPIENT_ADDRESS&mode=light&theme=%7B%22colors%22%3A%7B%22primary%22%3A%22red%22%7D%7D"
   style="width: 400px; height: 581px; max-width: 100%; border: none"
   scrolling="no"
 />
 ```
+
+## Related
+
+- [Smart Deposit Addresses guide](/api-integration/smart-deposits): how SDAs work, including supported tokens and limits
+- [Track transactions](/api-integration/status-history): receive webhooks for widget deposits

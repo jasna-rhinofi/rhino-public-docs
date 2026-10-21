@@ -5,51 +5,50 @@ description: "Enable transactions on Tron, Solana and Bitcoin where there are hi
 
 **Extension tier:** Premium
 
-Tron, Solana and Bitcoin all have higher onchain transaction costs and as such access to these chains must be enabled through this extension. 
-
----
+Tron, Solana and Bitcoin all have higher onchain transaction costs than other supported chains, so access to them is enabled through this extension. 
 
 ## What's enabled
 
-- **Deposits to a Tron Smart Deposit Address** — Smart Deposit Addresses can be generated on Tron. Users can send [supported tokens](https://docs.rhino.fi/get-started/supported-chains) to a Rhino.fi SDA on Tron, and funds are settled to the configured destination chain. For all deposits to a Tron Smart Deposit Address there is a per-transaction \$1.40 cost.
-- **Tron as a destination** — Bridges can settle to a Tron address. There is a per-transaction \$1.40 cost for this.
-- **Solana as a destination** — Bridges can settle to a Solana address. There is a per-transaction \$0.50 cost for this.
-- **Deposits to a Bitcoin Smart Deposit Address** — Smart Deposit Addresses can be generated on Bitcoin. Users can send [supported tokens](https://docs.rhino.fi/get-started/supported-chains) to a Rhino.fi SDA on Bitcoin, and funds are settled to the configured destination chain. For all deposits to a Bitcoin Smart Deposit Address there is a per-transaction \$1 fee which can be sponsored or paid by the customer.
+| Feature | What it does | Cost per transaction |
+| --- | --- | --- |
+| **Tron Smart Deposit Addresses** | Create SDAs on Tron. Users send [supported tokens](/get-started/supported-chains) to the SDA, and funds settle to your configured destination. | \$1.40 |
+| **Tron as a destination** | Bridge transfers can settle to a Tron address. | \$1.40 |
+| **Solana as a destination** | Bridge transfers can settle to a Solana address. | \$0.50 |
+| **Bitcoin Smart Deposit Addresses** | Create SDAs on Bitcoin. Users send BTC to the SDA, and funds settle to your configured destination. See [Interacting with Bitcoin](/interacting-with-bitcoin). | \$1 |
 
----
+## Who pays
+
+For each of these chains, you choose who pays the additional cost:
+
+- **You.** The cost appears in the sponsored section of the quote and is invoiced at month end.
+- **Your end customer.** The cost appears in the non-sponsored section of the quote and is deducted from the amount settled on the destination chain.
+
+Your account manager sets this up with you. See [Fees](/get-started/fees-and-limits#onchain-costs).
 
 ## Why this is a separate extension
 
-These chains requires specific infrastructure, compliance controls and operational processes that differ from EVM chains and have a higher per-transaction cost. 
+These chains need specific infrastructure, compliance controls and operational processes that differ from EVM chains, and they cost more per transaction. 
 
-To enable this extension, please speak with your Rhino.fi Account Manager. 
-
----
+To enable this extension, contact your Rhino.fi account manager. 
 
 ## Integration
 
-Once Tron, Solana and Bitcoin Access is enabled on your account, Tron and Solana will appear in the bridge config (`bridgeConfigs`) as an available chain with `enabledDepositAddress: true`.
+Once the extension is enabled on your account, Tron and Solana appear in the [configs endpoint](/api-reference/bridge/configs/configs-chains-&-tokens) (`GET /bridge/configs`) as available chains, with `enabledDepositAddress: true`. No code changes are needed beyond checking that these chains are listed.
 
-No code changes are required beyond confirming that these chains are listed.
+- **SDAs on Tron or Bitcoin:** use `"TRON"` or `"BITCOIN"` in `depositChains`. These need their own create request: one request can cover several EVM chains, but Tron, Solana and Bitcoin SDAs are each created separately.
+- **Tron as a destination:** use `"TRON"` as `chainOut` for bridge transfers, or `destinationChain` for SDAs.
+- **Solana as a destination:** use `"SOLANA"` in the same way.
 
-For SDA generation on Tron and Bitcoin, use `"TRON"` or `"BITCOIN"` in the `depositChains` array.
-
-<Info>
-  Generating a Tron or Solana or Bitcoin SDA requires a separate call. I.e. you can specify many EVMs to generate SDAs across all EVMs. Then generate a Tron (or Solana or Bitcoin) SDA with a separate call.
-</Info>
-
-For Tron as a destination, use `"TRON"` as the `destinationChain`. For Solana, use `"SOLANA"`.
-
----
+See [Smart Deposit Addresses](/api-integration/smart-deposits) and [Bridge transfers](/api-integration/bridge) for the full flows.
 
 ## SDK support
 
-Chain adapter documentation is available at [Chain Adapters](https://docs.rhino.fi/sdk/chain-adapters/overview)
-
----
+See [Chain adapters](/sdk/chain-adapters/overview).
 
 ## Related
 
-- [Smart Deposit Addresses](/get-started/sda)
-- [Supported Chains](/get-started/supported-chains)
+- [Smart Deposit Addresses](/api-integration/smart-deposits)
+- [Interacting with Bitcoin](/interacting-with-bitcoin)
+- [Fees](/get-started/fees-and-limits)
+- [Supported chains and tokens](/get-started/supported-chains)
 - [Extensions overview](/get-started/extensions)

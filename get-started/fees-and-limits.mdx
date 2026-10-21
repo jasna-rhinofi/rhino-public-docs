@@ -5,50 +5,61 @@ description: "Learn how Rhino.fi charges fees and how the Advanced Fee & Limit M
 
 ## How Rhino.fi fees work
 
-Rhino.fi offers a pricing structure which has the flexibility to suit clients throughout their growth journey and provides full access to the Rhino.fi Stablecoin Activation Stack with a number of optional extensions to supercharge your Rhino.fi use. 
+Rhino.fi offers a pricing structure which has the flexibility to suit clients throughout their growth journey and provides full access to the Rhino.fi Stablecoin Activation Stack, with a number of optional extensions to supercharge your Rhino.fi use. 
 
-<Info>
-  For more information please visit: [https://rhino.fi/pricing](https://rhino.fi/pricing)
-</Info>
+For more information, visit [rhino.fi/pricing](https://rhino.fi/pricing).
 
-### Subscription
+## Subscription
 
-The Subscription tiers are ideal for growing with companies as they scale up.
+The subscription tiers are designed to grow with your company as it scales.
 
-- The 'Starter' tier is ideal for early teams who are within beta testing and low volumes.
-- The 'Growth' tier allows for predictable spend at scale for companies growing their offering.
-- The 'Scale' tier is a match for scaling teams with stablecoins as core to their offering.
-- The 'Enterprise' tier is for companies where stablecoins are a critical flow and has tailored economics and coverage for the highest volumes and values.
+- The **Starter** tier is ideal for early teams who are in beta testing and at low volumes.
+- The **Growth** tier allows for predictable spend at scale for companies growing their offering.
+- The **Scale** tier is a match for scaling teams with stablecoins at the core of their offering.
+- The **Enterprise** tier is for companies where stablecoins are a critical flow, with tailored economics and coverage for the highest volumes and values.
 
-Each tier has a fixed monthly cost with the ability to continue into overages for an uninterrupted service.
+Each tier has a fixed monthly cost, with the ability to continue into overages for an uninterrupted service.
 
-Clients have access to the Rhino.fi Stablecoin Activation Stack including; Smart Deposit Addresses, Console access, enterprise-grade transaction volume and value support, embedded KTY and AML, multi-chain support across 30+ chains and more!
+Clients have access to the Rhino.fi Stablecoin Activation Stack, including Smart Deposit Addresses, Console access, enterprise-grade transaction volume and value support, embedded KYT and AML, multi-chain support across 30+ chains and more.
 
-It is also possible to enable a wide variety of extensions, including;
+You can also enable a wide variety of extensions, including:
 
-- The Tron, Solana and Bitcoin extension provides access to these chains across bridging and Rhino.fi Smart Deposit Addresses.
-- The Advanced Fee and Limit Management extension which provides comprehensive control over fees and limit visibility.
-- 1:1 Stablecoin Swaps which enables zero slippage USDC/USDT conversions
-- Enhanced Compliance functionality with alerting and custom configuration on top of Rhino.fi robust set up.
+- **Tron, Solana and Bitcoin Access**, which provides access to these chains for bridging and Smart Deposit Addresses.
+- **Advanced Fee & Limit Management**, which provides comprehensive control over fees and visibility of limits.
+- **1:1 Stablecoin Settlement**, which enables zero-slippage USDC/USDT conversions.
+- **Enhanced Compliance & Risk Management**, which adds alerting and custom configuration on top of Rhino.fi's robust setup.
 
-and more.
+See [Extensions](/get-started/extensions) for the full list.
 
-The onchain cost for activity (moving funds from Smart Deposit Addresses and settlement through the Rhino.fi Bridge) are borne by Rhino.fi and clients are charged their fixed monthly fee. This provides cost predictability to clients and removes the volatility of onchain costs. The underlying fee-related information is still transparently provided within generated quotes for bridge+swap within the `POST/quote/bridge-swap/user`endpoint, and when using Rhino.fi Smart Deposit Addresses, the fee information can be obtained prior to the transaction by providing `isSda = true`within the request body. Rhino.fi will honor the quoted fee until the quote expires — there are no surprises at settlement (the timestamp of the expiry is provides within the `expiresAt`param within the response).
+## Trial accounts
 
-Further information about specific onchain costs for Tron, Solana and Bitcoin can be found here: [https://learn.rhino.fi/articles/7749894324-tron-and-solana-onchain-gas-costs](https://learn.rhino.fi/articles/7749894324-tron-and-solana-onchain-gas-costs)
+Trial accounts are for testing before you subscribe. Each transaction pays a fee, deducted from the amount sent on the destination chain. Trial fees are for testing only and are not a guide to subscription pricing. See [Trial accounts: what's included and how it differs from a subscription](https://learn.rhino.fi/articles/8966431786-trial-accounts-what-s-included-and-how-it-differs-from-a-subscription).
 
-It is possible for clients to add on an additional charge that is passed directly through to their customers for their Rhino.fi activity. This is called a 'client surcharge' and is able to be a fixed \$ amount and/or a fixed % amount. This amount is deducted from the end of month invoice amount.
+## Onchain costs
 
-_For example: ClientB may wish to levy a \$1 charge to their customers for any Rhino.fi activity. At the end of the month the total Client Surcharge collected by Rhino.fi on behalf of clientB was \$1000. The end of month invoice for clientB is therefore their fixed subscription cost minus this \$1000 amount._
+Rhino.fi covers the onchain costs of moving funds from Smart Deposit Addresses and of settlement through the Rhino.fi Bridge, and you pay your fixed monthly fee. This keeps your costs predictable and removes the volatility of onchain costs.
 
-To configure the client surcharge per specific customers or specific routes, or to make changes to this once set, clients must enable the Advanced Fee and Limit Management extension: [https://docs.rhino.fi/get-started/extensions/advanced-fee-management](https://docs.rhino.fi/get-started/extensions/advanced-fee-management)
+The exception is Tron, Solana and Bitcoin, which have additional onchain costs. For each of these chains, you choose who pays: you (invoiced at month end) or your end customer (deducted from the amount they receive). See [Tron, Solana and Bitcoin Access](/get-started/extensions/tron-access).
 
-To discuss which approach is the most suitable for your company, please reach out.
+## Fees in quotes
 
----
+Fee information is still shown in every quote. For bridge and bridge+swap, request a quote with `POST /bridge/quote/bridge-swap/user`. For Smart Deposit Addresses, you can get the fees before the deposit by adding `isSda: "true"` to the same request (see [Price a deposit](/api-integration/smart-deposits#price-a-deposit)). Rhino.fi honours the quoted fee until the quote expires, so there are no surprises at settlement. The expiry time is in the response's `expiresAt` field.
+
+Some fields in the quote's `fees` object apply only to clients on [legacy pricing](https://learn.rhino.fi/articles/4088519114-how-fees-are-applied). On a subscription, most fees are covered by your plan.
+
+## Client surcharge
+
+You can add an extra charge that is passed directly through to your customers for their Rhino.fi activity. This is called a client surcharge. It can be a fixed dollar amount, a fixed percentage, or both. The total collected is deducted from your end-of-month invoice.
+
+For example, Client B charges its customers \$1 for any Rhino.fi activity. At the end of the month, the total client surcharge Rhino.fi collected on behalf of Client B is \$1,000. Client B's end-of-month invoice is its fixed subscription cost minus \$1,000.
+
+To set the client surcharge for specific customers or routes, or to change it once set, enable the [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management) extension.
+
+To discuss which approach suits your company, contact your Rhino.fi account manager.
 
 ## Related
 
-- [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management) — Extension detail page
-- [Bridge quote endpoint](/api-reference/bridge/quote/generate-a-bridgebridge+swap-quote) — API reference for fee quotes
-- [Smart Deposit Addresses](/get-started/sda) — How fees apply to SDA deposits
+- [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management): extension details
+- [Bridge quote endpoint](/api-reference/bridge/quote/generate-a-bridgebridge+swap-quote): API reference for fee quotes
+- [Smart Deposit Addresses](/api-integration/smart-deposits#fees): how fees apply to SDA deposits
+- [Limits](/get-started/limits): SDA and transfer limits
