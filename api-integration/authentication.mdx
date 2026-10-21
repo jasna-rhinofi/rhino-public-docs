@@ -1,56 +1,130 @@
 ---
 title: "Authentication"
+description: "Choose the right API key, exchange it for a JWT and keep the token valid."
 ---
 
-Most API endpoints require you to authenticate your requests using a Json Web Token (JWT). You can obtain a JWT by making a `POST` request to [https://api.rhino.fi/authentication/auth/apiKey](https://api.rhino.fi/authentication/auth/apiKey) and including your API key in the payload.
+Rhino.fi authenticates requests with a JSON Web Token (JWT). You get the token by exchanging an API key. Tokens are valid for one hour, so your integration should cache them and refresh them automatically.
+
+## Choose a key type
+
+You create API keys in the [Rhino.fi Console](https://console.rhino.fi). There are two types, and the choice decides where a key may be used.
+
+|  | Secret key | Public key |
+| --- | --- | --- |
+| **Where it can run** | Server-side only | Browser and mobile apps |
+| **Bridge history** (`/history-cursor/user`) | Yes | No |
+| **SDA history** (`/sda/deposit-addresses/{address}/{chain}/history`) | Yes | No |
+| **SDA search** (`/sda/deposit-addresses/search`) | Yes | Until 9 November 2026 |
+| **Webhook event history** (`/webhook/user-events-cursor`) | Yes | Until 9 November 2026 |
+| **`destinationAddress` in SDA status responses** | Included | Omitted |
+| **Everything else in this section** | Yes | Yes |
+
+<Note>
+  From **9 November 2026**, SDA search and webhook event history accept only a JWT created from a secret key. Requests made with a public key are rejected with `403 SecretApiKeyRequired`. Call these endpoints from your backend.
+</Note>
+
+<Warning>
+  A secret key gives access to your project's full transaction history. Never ship a secret key to a browser or mobile app, never commit it to source control, and store it in a secrets manager.
+</Warning>
+
+### Restrict keys by IP
+
+Both key types support an optional IP allowlist of up to five addresses. Requests from other IPs are rejected. The allowlist does not widen a key's permissions: a public key with an allowlist still cannot read history. We recommend an allowlist on every secret key used in production. You manage allowlists in the Rhino.fi Console.
+
+## Get a JWT
+
+Send your API key to the authentication endpoint.
 
 <CodeGroup>
 
 ```bash cURL
-curl https://api.rhino.fi/authentication/auth/apiKey \
-  -d '{"apiKey": "YOUR_API_KEY"}'\
-  -H 'content-type: application/json'
+curl -X POST https://api.rhino.fi/authentication/auth/apiKey \
+  -H 'Content-Type: application/json' \
+  -d '{"apiKey": "YOUR_API_KEY"}'
 ```
 
 ```javascript JavaScript
 const response = await fetch('https://api.rhino.fi/authentication/auth/apiKey', {
   method: 'POST',
-  headers: {
-    'content-type': 'application/json',
-  },
-  body: JSON.stringify({
-    apiKey: 'YOUR_API_KEY',
-  }),
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ apiKey: process.env.RHINO_API_KEY }),
 })
 const { jwt } = await response.json()
 ```
 
 </CodeGroup>
 
-Information on API keys can be found [here](https://docs.rhino.fi/get-started/api-keys).
+The response contains a `jwt` field.
 
-## Using the JWT
+## Send the JWT
 
-Once you have a JWT, you need to include it in your API requests using the `Authorization` header. Example:
+Put the JWT in the `Authorization` header of every authenticated request. Both forms are accepted: the token on its own, or with a `Bearer` prefix (`Bearer <jwt>`).
 
-<CodeGroup>
-
-```bash cURL
-curl https://api.rhino.fi -H 'Authorization: YOUR_JWT'
+```bash
+curl https://api.rhino.fi/bridge/quote/commit/QUOTE_ID \
+  -X POST \
+  -H 'Authorization: YOUR_JWT'
 ```
 
-```javascript JavaScript
-fetch('https://api.rhino.fi', {
-  headers: {
-    'Authorization': 'YOUR_JWT',
-  },
-})
+## Keep the token fresh
+
+A JWT expires one hour after it is issued. Requesting a new token for every call adds latency, so cache the token and refresh it shortly before it expires.
+
+Every example in this section uses the helper below. Save it as `rhino.js`.
+
+```javascript rhino.js
+const API = 'https://api.rhino.fi'
+const TOKEN_TTL_MS = 55 * 60 * 1000 // refresh 5 minutes before the 1-hour expiry
+
+export class RhinoApiError extends Error {
+  constructor(status, body) {
+    super(body?._tag ?? body?.message ?? `HTTP ${status}`)
+    this.status = status
+    this.code = body?._tag
+    this.body = body
+  }
+}
+
+let token = null // { jwt, expiresAt }
+
+export async function getJwt() {
+  if (token && Date.now() < token.expiresAt) return token.jwt
+
+  const res = await fetch(`${API}/authentication/auth/apiKey`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: process.env.RHINO_API_KEY }),
+  })
+  const body = await res.json()
+  if (!res.ok) throw new RhinoApiError(res.status, body)
+
+  token = { jwt: body.jwt, expiresAt: Date.now() + TOKEN_TTL_MS }
+  return token.jwt
+}
+
+/**
+ * Calls the Rhino.fi API and returns the parsed JSON body.
+ * Throws RhinoApiError for any non-2xx response.
+ */
+export async function rhinoFetch(path, { method = 'GET', body, auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (auth) headers.Authorization = await getJwt()
+
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new RhinoApiError(res.status, data)
+  return data
+}
 ```
 
-</CodeGroup>
+If a request returns `401 Unauthorized` or `400 InvalidJwt`, clear the cached token, request a new one, and retry once.
 
-**A JWT obtained from an API key is only valid for one hour.** Once expired, you can just use your API key again in the same way to obtain a fresh JWT.
+## Next steps
 
-<Note>
-  We recommend using the SDK if you use JavaScript/TypeScript for your application as it will take care of handling the JWT flow for you.
-</Note>
+<Card title="Core concepts" icon="compass" href="/api-integration/core-concepts">
+  Learn the identifiers, amounts, errors and limits shared by every endpoint.
+</Card>
