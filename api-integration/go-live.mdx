@@ -26,7 +26,6 @@ Complete these checks before production traffic reaches your integration. Most t
 - [ ] _(Required)_ JWTs are refreshed before they expire. Requests that return `401` are retried once with a fresh token.
 - [ ] _(Recommended)_ Every `4xx` and `5xx` response is logged with its error code. See [Errors](/api-integration/core-concepts#errors).
 - [ ] _(Recommended)_ `503` responses and network failures are retried with exponential backoff.
-- [ ] _(Recommended)_ The quote ID (`quoteId`, also used as `commitmentId` and `bridgeId`) is stored before any onchain deposit is sent.
 - [ ] _(Recommended)_ Your system recovers [missed webhook events](/webhook/get-missed-events) after an outage.
 - [ ] _(Recommended)_ Customer balances are credited on `EXECUTED`. Crediting earlier is a risk decision for your team.
 

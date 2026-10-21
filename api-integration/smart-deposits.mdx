@@ -210,7 +210,29 @@ Tron, Solana and Bitcoin have additional onchain costs (see [Tron, Solana and Bi
 - **Paid by you.** The cost appears in the sponsored section of the response and is invoiced in your month-end accounting.
 - **Paid by your end customer.** The cost appears in the non-sponsored section and is deducted from the amount settled on the destination chain.
 
-To see the fees for a deposit, request a quote with `isSda: "true"`. See [Pricing an SDA deposit](/api-integration/bridge#pricing-an-sda-deposit).
+### Price a deposit
+
+To show the fees for a deposit before your customer sends it, request a quote with `isSda: "true"`. Use the SDA as the `depositor` and your destination address as the `recipient`:
+
+```javascript
+const quote = await rhinoFetch('/bridge/quote/bridge-swap/user', {
+  method: 'POST',
+  body: {
+    chainIn: 'ETHEREUM',
+    chainOut: 'BASE',
+    tokenIn: 'USDT',
+    tokenOut: 'USDC',
+    amount: '250',
+    mode: 'pay',
+    depositor: depositAddress,
+    recipient: '0xYourTreasuryAddress',
+    isSda: 'true',
+  },
+})
+console.log(quote.receiveAmount, quote.fees)
+```
+
+This quote is for display only. Don't commit it: Rhino.fi creates the transfer automatically when the deposit arrives. See the [quote API reference](/api-reference/bridge/quote/generate-a-bridgebridge+swap-quote) for the full response.
 
 To set more granular fee rules or change an existing fee configuration, see [Advanced Fee & Limit Management](/get-started/extensions/advanced-fee-management).
 

@@ -1,6 +1,6 @@
 ---
 title: "Bridge transfers"
-description: "Move tokens between chains, and optionally swap them, using four API calls and one onchain deposit."
+description: "Move tokens between chains, or swap them, with a quote, a commit and one onchain transaction."
 ---
 
 Use bridge transfers when your platform, or your user's connected wallet, holds the funds and signs the deposit. One flow covers three use cases:
@@ -85,7 +85,6 @@ const quote = await rhinoFetch('/bridge/quote/bridge-swap/user', {
 | `amountNative` | No | Native gas token to deliver to the recipient on `chainOut` (Gas Boost), in whole units. Omit if not needed. |
 | `webhookUrl` | No | Webhook URL for this transfer only |
 | `refundAddress` | No | Where to return funds if a swap cannot complete |
-| `isSda` | No | `"true"` to price a Smart Deposit Address deposit instead of a direct transfer |
 
 ### Choose a mode
 
@@ -103,9 +102,7 @@ Set a webhook URL once for your project in the Rhino.fi Console. Pass `webhookUr
 
 Set `refundAddress` only if the depositor can reliably access that address, such as a wallet they control. If funds come from a pooled source like an exchange, leave it unset. Your account manager then handles each refund and returns funds to a verified address.
 
-### Pricing an SDA deposit
-
-Set `isSda: "true"` only to see the fees for a deposit into a [Smart Deposit Address](/api-integration/smart-deposits). For transfers you send yourself, leave it unset.
+### Quote response
 
 The response includes:
 
@@ -137,9 +134,7 @@ const { quoteId } = await rhinoFetch(`/bridge/quote/commit/${quote.quoteId}`, {
 })
 ```
 
-<Warning>
-  Store `quoteId` in your database **before** you send the onchain deposit. It is the only way to match the deposit to its status, webhooks and support requests.
-</Warning>
+Pass the `quoteId` to the deposit in the next step. To look the transfer up later, you can use either the `quoteId` or the deposit transaction hash.
 
 ## 4. Deposit onchain
 
@@ -238,12 +233,12 @@ await tx.wait()
 
 This example handles all three cases. It assumes `rhino.js` from [Authentication](/api-integration/authentication#keep-the-token-fresh) and `deposit-evm.js` from above.
 
-```javascript transfer.js
+```javascript bridge-tokens.js
 import { parseUnits } from 'ethers'
 import { rhinoFetch } from './rhino.js'
 import { depositToBridge, ensureAllowance } from './deposit-evm.js'
 
-export async function transfer({ signer, chainIn, chainOut, tokenIn, tokenOut, amount, recipient }) {
+export async function bridgeTokens({ signer, chainIn, chainOut, tokenIn, tokenOut, amount, recipient }) {
   const isSwap = tokenIn !== tokenOut
   const [configs, swapTokens] = await Promise.all([
     rhinoFetch('/bridge/configs', { auth: false }),
@@ -266,7 +261,6 @@ export async function transfer({ signer, chainIn, chainOut, tokenIn, tokenOut, a
   const { quoteId } = await rhinoFetch(`/bridge/quote/commit/${quote.quoteId}`, {
     method: 'POST',
   })
-  // Store quoteId in your database here, before sending anything onchain.
 
   // 3. Resolve the token being sent (null = the chain's native token)
   const token = tokenIn === chainConfig.nativeTokenName
@@ -294,12 +288,12 @@ export async function transfer({ signer, chainIn, chainOut, tokenIn, tokenOut, a
 
 ```javascript Usage
 import { JsonRpcProvider, Wallet } from 'ethers'
-import { transfer } from './transfer.js'
+import { bridgeTokens } from './bridge-tokens.js'
 
 // Use your own signer here: a custody provider, MPC wallet or hardware signer.
 const signer = new Wallet(process.env.EVM_PRIVATE_KEY, new JsonRpcProvider(process.env.BASE_RPC_URL))
 
-const quoteId = await transfer({
+const quoteId = await bridgeTokens({
   signer,
   chainIn: 'BASE',
   chainOut: 'ARBITRUM',

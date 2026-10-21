@@ -43,7 +43,7 @@ The exception is Tron, Solana and Bitcoin, which have additional onchain costs. 
 
 ## Fees in quotes
 
-Fee information is still shown in every quote. For bridge and bridge+swap, request a quote with `POST /bridge/quote/bridge-swap/user`. For Smart Deposit Addresses, you can get the fees before the deposit by adding `isSda: "true"` to the same request (see [Pricing an SDA deposit](/api-integration/bridge#pricing-an-sda-deposit)). Rhino.fi honours the quoted fee until the quote expires, so there are no surprises at settlement. The expiry time is in the response's `expiresAt` field.
+Fee information is still shown in every quote. For bridge and bridge+swap, request a quote with `POST /bridge/quote/bridge-swap/user`. For Smart Deposit Addresses, you can get the fees before the deposit by adding `isSda: "true"` to the same request (see [Price a deposit](/api-integration/smart-deposits#price-a-deposit)). Rhino.fi honours the quoted fee until the quote expires, so there are no surprises at settlement. The expiry time is in the response's `expiresAt` field.
 
 Some fields in the quote's `fees` object apply only to clients on [legacy pricing](https://learn.rhino.fi/articles/4088519114-how-fees-are-applied). On a subscription, most fees are covered by your plan.
 
