@@ -120,6 +120,7 @@ Rhino.fi only processes deposits that meet all of these conditions:
 - The token is in `supportedTokens` for that chain.
 - The amount is between `minDepositLimitUsd` and `maxDepositLimitUsd`.
 - The deposit passes AML screening. For custom screening rules and real-time AML alerts, see [Enhanced Compliance & Risk Management](/get-started/extensions/enhanced-compliance).
+- For native tokens such as ETH, the deposit is sent as a direct transfer. Internal transfers, where a smart contract sends the funds (for example a smart wallet, or an exchange that batches withdrawals), are only supported on Ethereum, Base and Optimism. On other chains, such as Arbitrum, Rhino.fi does not detect them, so no webhook is sent.
 
 You can show these conditions to your customer next to the address, so they know which deposits will be processed. Deposits slightly outside the limits may still be processed, to allow for price movement, but do not rely on this. If liquidity on a route is temporarily insufficient, the deposit is retried until it settles or is refunded. Deposits that are not processed trigger a `DEPOSIT_ADDRESS_BRIDGE_REJECTED` webhook. Contact your Rhino.fi account manager to arrange a refund.
 
